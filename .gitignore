@@ -23,5 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Generated keys and secrets
+*.key
+*.pem
+*.cert
+generateKeys.mjs
+
 # Ignored for the template, you probably want to remove it:
 package-lock.json
