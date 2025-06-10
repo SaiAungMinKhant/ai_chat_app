@@ -7,10 +7,11 @@
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
-    "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" && convex dashboard",
+    "predev": "convex dev --once --run-sh \"node setup.mjs --once\"",
     "build": "tsc -b && vite build",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate": "tsx ./node_modules/@tanstack/router-cli/cli.ts generate"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
@@ -19,9 +20,11 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@tanstack/react-router": "^1.120.20",
+    "@tanstack/react-router-devtools": "^1.120.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.23.0",
+    "convex": "^1.24.8",
     "lucide-react": "^0.513.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -30,6 +33,8 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@tailwindcss/vite": "^4.0.14",
+    "@tanstack/router-cli": "^1.120.20",
+    "@tanstack/router-plugin": "^1.120.20",
     "@types/node": "^22.15.31",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
