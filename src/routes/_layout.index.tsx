@@ -1,11 +1,31 @@
-import { createFileRoute } from "@tanstack/react-router";
-import TextareaAutosize from "react-textarea-autosize"; // 1. Import the component
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import TextareaAutosize from "react-textarea-autosize";
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/_layout/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const [message, setMessage] = useState("");
+  const createChat = useMutation(api.chats.create);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log("Submitting message:", message);
+
+    try {
+      const res = await createChat({ prompt: message });
+      console.log("response:", res);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col justify-center items-center bg-background">
       <div className="h-full w-full max-w-3xl flex flex-col justify-center items-center">
@@ -14,15 +34,27 @@ function RouteComponent() {
             <h2 className="text-3xl font-bold tracking-tight w-full">Chat</h2>
           </div>
         </div>
+        <Outlet />
         <div className="bg-background p-4 md:p-8 w-full">
-          <div className="relative w-full">
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            className="relative w-full"
+          >
             <TextareaAutosize
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                console.log(e.target.value);
+              }}
               placeholder="Start a new chat..."
               minRows={5}
               maxRows={15}
               className="w-full resize-none rounded-lg border bg-background px-4 py-3 pr-12 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-muted-foreground hover:text-foreground">
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-muted-foreground hover:text-foreground"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -38,7 +70,7 @@ function RouteComponent() {
                 <path d="M22 2 11 13" />
               </svg>
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
