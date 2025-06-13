@@ -1,5 +1,5 @@
 import { internalMutation } from "./_generated/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { streamText } from "ai";
@@ -15,15 +15,18 @@ export const chat = internalMutation({
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    const messages = await ctx.runQuery(api.messages.list, {
+    const messages = await ctx.runQuery(internal.messages.internalList, {
       chatId: args.chatId,
     });
 
-    const assistantMessageId = await ctx.runMutation(api.messages.create, {
-      chatId: args.chatId,
-      role: "assistant",
-      content: "",
-    });
+    const assistantMessageId = await ctx.runMutation(
+      internal.messages.internalCreate,
+      {
+        chatId: args.chatId,
+        role: "assistant",
+        content: "",
+      },
+    );
 
     const { textStream } = streamText({
       model: model,
@@ -38,7 +41,7 @@ export const chat = internalMutation({
 
     for await (const part of textStream) {
       content += part;
-      await ctx.runMutation(api.messages.update, {
+      await ctx.runMutation(internal.messages.internalUpdate, {
         messageId: assistantMessageId,
         content,
       });

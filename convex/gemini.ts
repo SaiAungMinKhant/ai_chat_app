@@ -1,5 +1,6 @@
-import { internalMutation } from "./_generated/server";
-import { api } from "./_generated/api";
+// 1. Change the import from internalMutation to internalAction
+import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api"; // Use internal for calling other functions
 import { v } from "convex/values";
 
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -16,47 +17,56 @@ const genAI = createGoogleGenerativeAI({
 
 const model = genAI("gemini-2.5-flash-preview-05-20");
 
-export const chat = internalMutation({
+export const chat = internalAction({
   args: {
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    console.log("Starting chat for chatId:", args.chatId);
+    console.log("Starting chat action for chatId:", args.chatId);
 
-    const messages = await ctx.runQuery(api.messages.list, {
+    const messages = await ctx.runQuery(internal.messages.internalList, {
       chatId: args.chatId,
     });
 
-    console.log("Retrieved messages:", messages.length);
+    console.log("Retrieved messages:", messages);
 
-    const assistantMessageId = await ctx.runMutation(api.messages.create, {
-      chatId: args.chatId,
-      role: "assistant",
-      content: "",
-    });
+    const assistantMessageId = await ctx.runMutation(
+      internal.messages.internalCreate,
+      {
+        chatId: args.chatId,
+        role: "assistant",
+        content: "",
+      },
+    );
 
     try {
       const { textStream } = streamText({
         model: model,
-        messages: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+        messages: messages.map(
+          (message: { role: "user" | "assistant"; content: string }) => ({
+            role: message.role,
+            content: message.content,
+          }),
+        ),
       });
 
       let content = "";
 
       for await (const part of textStream) {
         content += part;
-        await ctx.runMutation(api.messages.update, {
+        await ctx.runMutation(internal.messages.internalUpdate, {
           messageId: assistantMessageId,
           content,
         });
       }
 
-      console.log("Chat completed successfully");
+      console.log("Chat action completed successfully");
     } catch (error) {
-      console.error("Error in chat:", error);
+      console.error("Error in chat action:", error);
+      await ctx.runMutation(internal.messages.internalUpdate, {
+        messageId: assistantMessageId,
+        content: "Error: Could not get a response from the AI.",
+      });
       throw error;
     }
   },

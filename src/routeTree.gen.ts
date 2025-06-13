@@ -12,8 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as LayoutIndexRouteImport } from './routes/_layout.index'
-import { Route as LayoutIndexChatChatIdRouteImport } from './routes/_layout.index.chat.$chatId'
+import { Route as LayoutChatRouteImport } from './routes/_layout.chat'
 
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
@@ -29,14 +28,9 @@ const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LayoutIndexRoute = LayoutIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutIndexChatChatIdRoute = LayoutIndexChatChatIdRouteImport.update({
-  id: '/index/chat/$chatId',
-  path: '/index/chat/$chatId',
+const LayoutChatRoute = LayoutChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -44,35 +38,27 @@ export interface FileRoutesByFullPath {
   '': typeof LayoutRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
-  '/': typeof LayoutIndexRoute
-  '/index/chat/$chatId': typeof LayoutIndexChatChatIdRoute
+  '/chat': typeof LayoutChatRoute
 }
 export interface FileRoutesByTo {
+  '': typeof LayoutRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
-  '/': typeof LayoutIndexRoute
-  '/index/chat/$chatId': typeof LayoutIndexChatChatIdRoute
+  '/chat': typeof LayoutChatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
-  '/_layout/': typeof LayoutIndexRoute
-  '/_layout/index/chat/$chatId': typeof LayoutIndexChatChatIdRoute
+  '/_layout/chat': typeof LayoutChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/settings' | '/sign-in' | '/' | '/index/chat/$chatId'
+  fullPaths: '' | '/settings' | '/sign-in' | '/chat'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/sign-in' | '/' | '/index/chat/$chatId'
-  id:
-    | '__root__'
-    | '/_layout'
-    | '/settings'
-    | '/sign-in'
-    | '/_layout/'
-    | '/_layout/index/chat/$chatId'
+  to: '' | '/settings' | '/sign-in' | '/chat'
+  id: '__root__' | '/_layout' | '/settings' | '/sign-in' | '/_layout/chat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -104,31 +90,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_layout/': {
-      id: '/_layout/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/index/chat/$chatId': {
-      id: '/_layout/index/chat/$chatId'
-      path: '/index/chat/$chatId'
-      fullPath: '/index/chat/$chatId'
-      preLoaderRoute: typeof LayoutIndexChatChatIdRouteImport
+    '/_layout/chat': {
+      id: '/_layout/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof LayoutChatRouteImport
       parentRoute: typeof LayoutRoute
     }
   }
 }
 
 interface LayoutRouteChildren {
-  LayoutIndexRoute: typeof LayoutIndexRoute
-  LayoutIndexChatChatIdRoute: typeof LayoutIndexChatChatIdRoute
+  LayoutChatRoute: typeof LayoutChatRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutIndexRoute: LayoutIndexRoute,
-  LayoutIndexChatChatIdRoute: LayoutIndexChatChatIdRoute,
+  LayoutChatRoute: LayoutChatRoute,
 }
 
 const LayoutRouteWithChildren =

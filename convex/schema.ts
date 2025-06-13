@@ -12,7 +12,8 @@ export default defineSchema({
   }),
   chats: defineTable({
     userId: v.string(),
-    title: v.string(),
+    title: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("private")),
   }).index("by_userId", ["userId"]),
   messages: defineTable({
     chatId: v.id("chats"),
