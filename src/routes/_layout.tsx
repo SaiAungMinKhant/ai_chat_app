@@ -24,7 +24,7 @@ function RouteComponent() {
   }
   return (
     <SidebarProvider>
-      <AppSidebar collapsible="icon" />
+      <AppSidebar variant="sidebar" />
       <SidebarInset>
         <Outlet />
       </SidebarInset>
