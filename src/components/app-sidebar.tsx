@@ -1,51 +1,90 @@
-import { Search, Settings } from "lucide-react";
+import { PlusIcon } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { SignOutButton } from "./auth/sign-out-button";
-import { useConvexAuth } from "convex/react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
 import { Link } from "@tanstack/react-router";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { SidebarHistory } from "./sidebar-history";
+import { Id } from "../../convex/_generated/dataModel";
+import { SidebarUser } from "./sidebar-user";
+
+interface User {
+  _id: Id<"users">;
+  _creationTime: number;
+  name?: string;
+  image?: string;
+  email?: string;
+  emailVerificationTime?: number;
+  phone?: string;
+  phoneVerificationTime?: number;
+  isAnonymous?: boolean;
+}
 
 export function AppSidebar({ ...props }) {
-  const { isAuthenticated } = useConvexAuth();
+  const user = useQuery(api.myFunctions.getCurrentUser) as User | null;
+  const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
+
   return (
     <Sidebar {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <div className="flex flex-row justify-between items-center">
+            <Link
+              to="/chat"
+              search={{ id: "" }}
+              onClick={() => {
+                setOpenMobile(false);
+              }}
+              className="flex flex-row gap-3 items-center"
+            >
+              <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
+                Chatbot
+              </span>
+            </Link>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className="p-2 h-fit"
+                  onClick={() => {
+                    setOpenMobile(false);
+                    void navigate({ to: "/chat", search: { id: "" } });
+                  }}
+                >
+                  <PlusIcon />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent align="end">New Chat</TooltipContent>
+            </Tooltip>
+          </div>
+        </SidebarMenu>
+      </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarTrigger />
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))} */}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarHistory user={user} />
       </SidebarContent>
       <SidebarFooter>
-        {isAuthenticated ? (
-          <SignOutButton />
+        {user ? (
+          <SidebarUser user={user} />
         ) : (
-          <Link to="/sign-in">
-            <Button variant="default">Sign in</Button>
-          </Link>
+          <SidebarMenu>
+            <Link to="/sign-in">
+              <Button variant="default" className="w-full">
+                Sign in
+              </Button>
+            </Link>
+          </SidebarMenu>
         )}
       </SidebarFooter>
     </Sidebar>
