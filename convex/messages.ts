@@ -39,7 +39,7 @@ export const send = mutation({
     });
 
     // Schedule the AI response generation
-    await ctx.scheduler.runAfter(0, internal.gemini.chat, {
+    await ctx.scheduler.runAfter(0, internal.gemini.chatStream, {
       chatId: args.chatId,
     });
   },
