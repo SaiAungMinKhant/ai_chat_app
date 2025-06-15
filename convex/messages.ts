@@ -81,3 +81,17 @@ export const internalUpdate = internalMutation({
     await ctx.db.patch(args.messageId, { content: args.content });
   },
 });
+
+export const update = mutation({
+  args: {
+    messageId: v.id("messages"),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    await ctx.db.patch(args.messageId, { content: args.content });
+  },
+});

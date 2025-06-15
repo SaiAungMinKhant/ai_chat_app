@@ -28,7 +28,7 @@ function PureChatHeader({
   isReadonly,
 }: {
   chatId: string | undefined;
-  selectedModelId: string;
+  selectedModelId?: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   user: User | null;

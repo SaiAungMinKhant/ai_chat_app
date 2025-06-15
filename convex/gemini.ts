@@ -2,7 +2,7 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { smoothStream, streamText } from "ai";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 if (!apiKey) {
@@ -36,10 +36,11 @@ export const chatStream = internalAction({
     try {
       const { textStream } = streamText({
         model: model,
-        messages: messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+        prompt: messages.map((message) => message.content).join("\n"),
+        experimental_transform: smoothStream({
+          delayInMs: 10,
+          chunking: "word",
+        }),
       });
 
       let content = "";

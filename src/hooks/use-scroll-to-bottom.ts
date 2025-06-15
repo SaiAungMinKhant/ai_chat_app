@@ -14,11 +14,14 @@ export function useScrollToBottom() {
       endRef.current?.scrollIntoView({ behavior: scrollBehavior });
       setScrollBehavior(false);
     }
-  }, [scrollBehavior]);
+  }, [scrollBehavior, setScrollBehavior]);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    setScrollBehavior(behavior);
-  }, []);
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      setScrollBehavior(behavior);
+    },
+    [setScrollBehavior],
+  );
 
   const onViewportEnter = useCallback(() => {
     setIsAtBottom(true);
