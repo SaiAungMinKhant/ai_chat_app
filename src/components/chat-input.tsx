@@ -6,7 +6,7 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
+import { PreviewAttachment } from "./preview-attachment";
 
 interface Attachment {
   url: string;
@@ -16,25 +16,31 @@ interface Attachment {
 
 interface ChatInputProps {
   chatId?: string;
-  message: string;
-  setMessage: (message: string) => void;
+  input: string;
+  setInput: (input: string) => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   isLoading?: boolean;
   onStop?: () => void;
   className?: string;
   showSuggestions?: boolean;
-  messages?: { _id: string; role: string; content?: string }[];
+  chatMessages?: { _id: string; role: string; content?: string }[];
+  canScrollUp: boolean;
+  scrollToTop: () => void;
+  scrollTop: number;
 }
 
 function PureChatInput({
-  chatId,
-  message,
-  setMessage,
+  input,
+  setInput,
   onSubmit,
   isLoading = false,
   onStop,
   className,
-  messages,
+  chatMessages,
+  chatId,
+  canScrollUp,
+  scrollToTop,
+  scrollTop,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,7 +54,18 @@ function PureChatInput({
     "",
   );
 
-  const { isAtBottom, scrollToBottom } = useScrollToBottom();
+  const handleScrollToTop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("Scroll button clicked, current scrollTop:", scrollTop);
+    scrollToTop();
+  };
+
+  console.log("ChatInput render:", {
+    canScrollUp,
+    scrollTop,
+    messagesLength: chatMessages?.length,
+  });
 
   // Auto-resize textarea
   const adjustHeight = useCallback(() => {
@@ -67,22 +84,22 @@ function PureChatInput({
 
   // Initialize from localStorage
   useEffect(() => {
-    if (textareaRef.current && !message) {
+    if (textareaRef.current && !input) {
       const finalValue = localStorageInput || "";
-      setMessage(finalValue);
+      setInput(finalValue);
       adjustHeight();
     }
-  }, [localStorageInput, setMessage, message, adjustHeight]);
+  }, [localStorageInput, setInput, input, adjustHeight]);
 
   // Save to localStorage
   useEffect(() => {
-    setLocalStorageInput(message);
-  }, [message, setLocalStorageInput]);
+    setLocalStorageInput(input);
+  }, [input, setLocalStorageInput]);
 
   // Handle input changes
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = event.target.value;
-    setMessage(newValue);
+    setInput(newValue);
     setLocalStorageInput(newValue);
     adjustHeight();
   };
@@ -143,7 +160,7 @@ function PureChatInput({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      if (!message.trim() || isLoading) return;
+      if (!input.trim() || isLoading) return;
 
       await onSubmit(e);
 
@@ -156,33 +173,26 @@ function PureChatInput({
         textareaRef.current?.focus();
       }
     },
-    [message, isLoading, onSubmit, setLocalStorageInput, resetHeight, width],
+    [input, isLoading, onSubmit, setLocalStorageInput, resetHeight, width],
   );
-
-  // Auto-scroll when submitting
-  useEffect(() => {
-    if (isLoading) {
-      scrollToBottom();
-    }
-  }, [isLoading, scrollToBottom]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">
-      {/* Scroll to bottom button */}
       <AnimatePresence>
-        {!isAtBottom && messages && messages.length > 0 && (
+        {canScrollUp && chatMessages && chatMessages.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
             className="absolute left-1/2 bottom-28 -translate-x-1/2 z-50"
           >
             <Button
-              className="rounded-full"
+              className="rounded-full bg-background border shadow-lg hover:bg-accent"
               size="icon"
               variant="outline"
-              onClick={() => scrollToBottom()}
+              onClick={handleScrollToTop}
+              type="button"
             >
               <ArrowDown size={16} />
             </Button>
@@ -193,7 +203,7 @@ function PureChatInput({
       {/* Suggested actions */}
       {/* {showSuggestions && (
         <SuggestedActions
-          onSuggestionClick={(suggestion) => setMessage(suggestion)}
+          onSuggestionClick={(suggestion) => setInput(suggestion)}
           chatId={chatId}
         />
       )} */}
@@ -209,7 +219,7 @@ function PureChatInput({
       />
 
       {/* Attachments preview */}
-      {/* {(attachments.length > 0 || uploadQueue.length > 0) && (
+      {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div className="flex flex-row gap-2 overflow-x-scroll items-end">
           {attachments.map((attachment) => (
             <PreviewAttachment
@@ -230,14 +240,14 @@ function PureChatInput({
             />
           ))}
         </div>
-      )} */}
+      )}
 
       {/* Main input form */}
 
       <Textarea
         ref={textareaRef}
         placeholder={chatId ? "Type your message..." : "Start a new chat..."}
-        value={message}
+        value={input}
         onChange={handleInput}
         className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-20 ${className || ""}`}
         rows={2}
@@ -285,7 +295,7 @@ function PureChatInput({
             type="submit"
             size="sm"
             className="h-8 w-8 p-0 rounded-full"
-            disabled={!message.trim() || uploadQueue.length > 0}
+            disabled={!input.trim() || uploadQueue.length > 0}
           >
             <ArrowUp size={14} />
           </Button>
@@ -296,8 +306,12 @@ function PureChatInput({
 }
 
 export const ChatInput = memo(PureChatInput, (prevProps, nextProps) => {
-  if (prevProps.message !== nextProps.message) return false;
+  if (prevProps.input !== nextProps.input) return false;
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.chatId !== nextProps.chatId) return false;
+  if (prevProps.canScrollUp !== nextProps.canScrollUp) return false;
+  if (prevProps.scrollTop !== nextProps.scrollTop) return false;
+  if (prevProps.chatMessages?.length !== nextProps.chatMessages?.length)
+    return false;
   return true;
 });

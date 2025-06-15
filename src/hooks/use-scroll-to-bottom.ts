@@ -1,42 +1,80 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 
-type ScrollFlag = ScrollBehavior | false;
-
 export function useScrollToBottom() {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [canScrollUp, setCanScrollUp] = useState(false);
 
-  const [isAtBottom, setIsAtBottom] = useState(false);
-  const [scrollBehavior, setScrollBehavior] = useState<ScrollFlag>(false);
+  const checkScrollPosition = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const {
+      scrollTop: currentScrollTop,
+      scrollHeight,
+      clientHeight,
+    } = container;
+    const maxScroll = scrollHeight - clientHeight;
+
+    setScrollTop(currentScrollTop);
+    setCanScrollUp(currentScrollTop < -50);
+
+    console.log("Scroll position:", {
+      scrollTop: currentScrollTop,
+      scrollHeight,
+      clientHeight,
+      maxScroll,
+      canScrollUp: currentScrollTop > 50,
+    });
+  }, []);
 
   useEffect(() => {
-    if (scrollBehavior) {
-      endRef.current?.scrollIntoView({ behavior: scrollBehavior });
-      setScrollBehavior(false);
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      checkScrollPosition();
+    };
+
+    // Initial check
+    checkScrollPosition();
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [checkScrollPosition]);
+
+  const scrollToTop = useCallback((behavior: ScrollBehavior = "smooth") => {
+    console.log("Scrolling to top...");
+    const container = containerRef.current;
+
+    if (container) {
+      container.scrollTo({
+        top: 0,
+        behavior,
+      });
+
+      setTimeout(
+        () => {
+          setScrollTop(0);
+          setCanScrollUp(false);
+        },
+        behavior === "smooth" ? 200 : 0,
+      );
     }
-  }, [scrollBehavior, setScrollBehavior]);
-
-  const scrollToBottom = useCallback(
-    (behavior: ScrollBehavior = "smooth") => {
-      setScrollBehavior(behavior);
-    },
-    [setScrollBehavior],
-  );
-
-  const onViewportEnter = useCallback(() => {
-    setIsAtBottom(true);
   }, []);
 
-  const onViewportLeave = useCallback(() => {
-    setIsAtBottom(false);
-  }, []);
+  const scrollToNewMessage = useCallback(() => {
+    scrollToTop("smooth");
+  }, [scrollToTop]);
 
   return {
     containerRef,
     endRef,
-    isAtBottom,
-    scrollToBottom,
-    onViewportEnter,
-    onViewportLeave,
+    scrollTop,
+    canScrollUp,
+    scrollToTop,
+    scrollToNewMessage,
+    checkScrollPosition,
   };
 }
