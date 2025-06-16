@@ -1,8 +1,7 @@
 import { memo, RefObject } from "react";
-import { motion } from "framer-motion";
 import equal from "fast-deep-equal";
 import { Id } from "../../convex/_generated/dataModel";
-import { Greeting } from "./message";
+import { Greeting, PreviewMessage, ThinkingMessage } from "./message";
 
 interface Message {
   _id: Id<"messages">;
@@ -38,57 +37,15 @@ function PureChatMessages({
         {isLoading &&
           messages &&
           messages.length > 0 &&
-          messages[messages.length - 1].role === "user" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
-            >
-              <div className="bg-muted rounded-lg px-4 py-2">
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                    <div
-                      className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    Thinking...
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          )}
+          messages[messages.length - 1].role === "user" && <ThinkingMessage />}
 
         {reversedMessages.map((msg, index) => (
-          <motion.div
+          <PreviewMessage
             key={msg._id}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-            className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
-            >
-              {msg.content || (
-                <span className="text-muted-foreground italic">
-                  {msg.role === "assistant" ? "Thinking..." : ""}
-                </span>
-              )}
-            </div>
-          </motion.div>
+            message={msg}
+            isLoading={isLoading}
+            isLast={index === reversedMessages.length - 1}
+          />
         ))}
       </div>
 
