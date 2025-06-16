@@ -23,7 +23,7 @@ function RouteComponent() {
     return <Navigate to="/chat" search={{ id: undefined }} replace />;
   }
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar variant="sidebar" />
       <SidebarInset>
         <Outlet />

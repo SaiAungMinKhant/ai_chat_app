@@ -1,8 +1,11 @@
-import { memo, useRef, useEffect, useCallback, useState } from "react";
+import { memo, useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, ArrowDown, Paperclip, Square } from "lucide-react";
 import { toast } from "sonner";
-import { useLocalStorage, useWindowSize } from "usehooks-ts";
+import { useWindowSize } from "usehooks-ts";
+import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,14 +48,11 @@ function PureChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { width } = useWindowSize();
+  const navigate = useNavigate();
+  const user = useQuery(api.auth.isAuthenticated);
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
-
-  const [localStorageInput, setLocalStorageInput] = useLocalStorage(
-    `input-${chatId || "new"}`,
-    "",
-  );
 
   const handleScrollToTop = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,25 +82,10 @@ function PureChatInput({
     }
   }, []);
 
-  // Initialize from localStorage
-  useEffect(() => {
-    if (textareaRef.current && !input) {
-      const finalValue = localStorageInput || "";
-      setInput(finalValue);
-      adjustHeight();
-    }
-  }, [localStorageInput, setInput, input, adjustHeight]);
-
-  // Save to localStorage
-  useEffect(() => {
-    setLocalStorageInput(input);
-  }, [input, setLocalStorageInput]);
-
   // Handle input changes
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = event.target.value;
     setInput(newValue);
-    setLocalStorageInput(newValue);
     adjustHeight();
   };
 
@@ -157,23 +142,29 @@ function PureChatInput({
 
   // Submit form
   const submitForm = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
+    async (e?: React.FormEvent | React.MouseEvent) => {
+      e?.preventDefault();
 
       if (!input.trim() || isLoading) return;
 
-      await onSubmit(e);
+      if (!user) {
+        await navigate({ to: "/sign-in" });
+        return;
+      }
+
+      // Create a synthetic form event for onSubmit if we don't have one
+      const formEvent = e as React.FormEvent;
+      await onSubmit(formEvent);
 
       // Reset form
       setAttachments([]);
-      setLocalStorageInput("");
       resetHeight();
 
       if (width && width > 768) {
         textareaRef.current?.focus();
       }
     },
-    [input, isLoading, onSubmit, setLocalStorageInput, resetHeight, width],
+    [input, isLoading, onSubmit, resetHeight, width, user, navigate],
   );
 
   return (
@@ -292,10 +283,11 @@ function PureChatInput({
           </Button>
         ) : (
           <Button
-            type="submit"
+            type="button"
             size="sm"
             className="h-8 w-8 p-0 rounded-full"
             disabled={!input.trim() || uploadQueue.length > 0}
+            onClick={(e) => void submitForm(e)}
           >
             <ArrowUp size={14} />
           </Button>

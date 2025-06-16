@@ -42,7 +42,16 @@ export const sendMessage = mutation({
 export const get = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
     const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
     return chat;
   },
 });

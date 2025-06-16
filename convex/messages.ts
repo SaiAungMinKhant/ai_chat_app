@@ -11,7 +11,17 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const list = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
-    // TODO: Add auth check to ensure user owns this chat
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get the chat to verify ownership
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
     return await ctx.db
       .query("messages")
       .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
@@ -30,7 +40,11 @@ export const send = mutation({
       throw new Error("Not authenticated");
     }
 
-    // TODO: Verify user owns this chat
+    // Verify user owns this chat
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
 
     await ctx.db.insert("messages", {
       chatId: args.chatId,
@@ -93,5 +107,22 @@ export const update = mutation({
       throw new Error("Not authenticated");
     }
     await ctx.db.patch(args.messageId, { content: args.content });
+  },
+});
+
+export const get = query({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
+    return chat;
   },
 });

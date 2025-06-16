@@ -7,8 +7,8 @@
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
-    "build": "tsc -b && vite build",
-    "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "tsc -b; vite build",
+    "lint": "tsc ; eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "generate": "tsx ./node_modules/@tanstack/router-cli/cli.ts generate"
   },
