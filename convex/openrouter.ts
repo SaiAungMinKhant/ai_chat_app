@@ -1,24 +1,24 @@
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { smoothStream, streamText } from "ai";
 
-const apiKey = process.env.GOOGLE_API_KEY;
+const apiKey = process.env.OPENROUTER_API_KEY;
 if (!apiKey) {
-  throw new Error("GOOGLE_API_KEY environment variable is required");
+  throw new Error("OPENROUTER_API_KEY environment variable is required");
 }
 
-const genAI = createGoogleGenerativeAI({ apiKey });
-const model = genAI("gemini-1.5-flash");
+const openrouter = createOpenRouter({ apiKey });
 
 export const chatStream = internalAction({
   args: {
     chatId: v.id("chats"),
     onUpdate: v.optional(v.any()),
+    modelName: v.string(),
   },
   handler: async (ctx, args) => {
-    console.log("Starting chat stream for chatId:", args.chatId);
+    console.log("Starting OpenRouter chat stream for chatId:", args.chatId);
 
     const messages = await ctx.runQuery(internal.messages.internalList, {
       chatId: args.chatId,
@@ -30,12 +30,13 @@ export const chatStream = internalAction({
         chatId: args.chatId,
         role: "assistant",
         content: "",
+        model: args.modelName,
       },
     );
 
     try {
       const { textStream } = streamText({
-        model: model,
+        model: openrouter(args.modelName),
         prompt: messages.map((message) => message.content).join("\n"),
         experimental_transform: smoothStream({
           delayInMs: 10,
@@ -64,7 +65,7 @@ export const chatStream = internalAction({
 
       return { content, chunks };
     } catch (error) {
-      console.error("Error in chat stream:", error);
+      console.error("Error in OpenRouter chat stream:", error);
       await ctx.runMutation(internal.messages.internalUpdate, {
         messageId: assistantMessageId,
         content: "Error: Could not get a response from the AI.",

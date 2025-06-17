@@ -30,6 +30,8 @@ interface ChatInputProps {
   canScrollUp: boolean;
   scrollToTop: () => void;
   scrollTop: number;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
 }
 
 function PureChatInput({
@@ -44,6 +46,8 @@ function PureChatInput({
   canScrollUp,
   scrollToTop,
   scrollTop,
+  selectedModel = "openai/gpt-4.1-nano",
+  onModelChange,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,11 +65,11 @@ function PureChatInput({
     scrollToTop();
   };
 
-  console.log("ChatInput render:", {
-    canScrollUp,
-    scrollTop,
-    messagesLength: chatMessages?.length,
-  });
+  // console.log("ChatInput render:", {
+  //   canScrollUp,
+  //   scrollTop,
+  //   messagesLength: chatMessages?.length,
+  // });
 
   // Auto-resize textarea
   const adjustHeight = useCallback(() => {
@@ -255,8 +259,28 @@ function PureChatInput({
         }}
       />
 
-      {/* Attachment button */}
-      <div className="absolute bottom-2 left-2">
+      {/* Left side buttons - Model selector and Attachment */}
+      <div className="absolute bottom-2 left-2 flex items-center gap-1">
+        {/* Model Selector */}
+        {onModelChange && (
+          <select
+            value={selectedModel}
+            onChange={(e) => onModelChange(e.target.value)}
+            className="px-2 py-1 text-xs border rounded bg-background text-foreground"
+            disabled={isLoading}
+          >
+            <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+            <option value="google/gemini-2.0-flash-001">
+              Gemini 2.0 Flash
+            </option>
+            <option value="deepseek/deepseek-prover-v2:free">
+              DeepSeek Prover
+            </option>
+            <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+          </select>
+        )}
+
+        {/* Attachment button */}
         <Button
           type="button"
           variant="ghost"
@@ -305,5 +329,6 @@ export const ChatInput = memo(PureChatInput, (prevProps, nextProps) => {
   if (prevProps.scrollTop !== nextProps.scrollTop) return false;
   if (prevProps.chatMessages?.length !== nextProps.chatMessages?.length)
     return false;
+  if (prevProps.selectedModel !== nextProps.selectedModel) return false;
   return true;
 });

@@ -7,6 +7,7 @@ export const sendMessage = mutation({
   args: {
     content: v.string(),
     chatId: v.optional(v.id("chats")),
+    model: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -25,14 +26,18 @@ export const sendMessage = mutation({
       });
     }
 
+    const model = args.model || "openai/gpt-4.1-nano";
+
     await ctx.db.insert("messages", {
       chatId: currentChatId,
       role: "user",
       content: args.content,
+      model: model,
     });
 
-    await ctx.scheduler.runAfter(0, internal.gemini.chatStream, {
+    await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
       chatId: currentChatId,
+      modelName: model,
     });
 
     return currentChatId;

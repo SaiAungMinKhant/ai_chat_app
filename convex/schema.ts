@@ -18,6 +18,7 @@ export default defineSchema({
   messages: defineTable({
     chatId: v.id("chats"),
     role: v.union(v.literal("user"), v.literal("assistant")),
+    model: v.optional(v.string()),
     content: v.string(),
   }).index("by_chatId", ["chatId"]),
   users: defineTable({

@@ -12,21 +12,21 @@ export function useScrollToBottom() {
 
     const {
       scrollTop: currentScrollTop,
-      scrollHeight,
-      clientHeight,
+      // scrollHeight,
+      // clientHeight,
     } = container;
-    const maxScroll = scrollHeight - clientHeight;
+    // const maxScroll = scrollHeight - clientHeight;
 
     setScrollTop(currentScrollTop);
     setCanScrollUp(currentScrollTop < -50);
 
-    console.log("Scroll position:", {
-      scrollTop: currentScrollTop,
-      scrollHeight,
-      clientHeight,
-      maxScroll,
-      canScrollUp: currentScrollTop > 50,
-    });
+    // console.log("Scroll position:", {
+    //   scrollTop: currentScrollTop,
+    //   scrollHeight,
+    //   clientHeight,
+    //   maxScroll,
+    //   canScrollUp: currentScrollTop > 50,
+    // });
   }, []);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function useScrollToBottom() {
   }, [checkScrollPosition]);
 
   const scrollToTop = useCallback((behavior: ScrollBehavior = "smooth") => {
-    console.log("Scrolling to top...");
+    // console.log("Scrolling to top...");
     const container = containerRef.current;
 
     if (container) {

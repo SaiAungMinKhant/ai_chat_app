@@ -15,10 +15,11 @@ interface ChatProps {
 export function Chat({ chatId }: ChatProps) {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("openai/gpt-4.1-nano");
   const navigate = useNavigate();
 
   const createChat = useMutation(api.chats.sendMessage);
-  const sendMessage = useMutation(api.messages.send);
+  const sendMessage = useMutation(api.messages.sendWithOpenRouter);
 
   const messages = useQuery(
     api.messages.list,
@@ -83,15 +84,27 @@ export function Chat({ chatId }: ChatProps) {
     e.preventDefault();
     if (!message.trim()) return;
 
+    console.log("Submitting message with model:", selectedModel);
+
     try {
       setIsLoading(true);
       if (chatId) {
         await sendMessage({
           chatId: chatId as Id<"chats">,
           content: message,
+          modelName: selectedModel,
         });
       } else {
-        const newChatId = await createChat({ content: message });
+        const newChatId = await createChat({
+          content: message,
+          model: selectedModel,
+        });
+        console.log(
+          "Created new chat with model:",
+          selectedModel,
+          "chatId:",
+          newChatId,
+        );
         await navigate({
           to: "/chat",
           search: { id: newChatId },
@@ -106,11 +119,15 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
+  const handleModelChange = (model: string) => {
+    console.log("Model changed from", selectedModel, "to", model);
+    setSelectedModel(model);
+  };
+
   return (
     <div className="flex flex-col min-w-0 h-dvh bg-background">
       <ChatHeader
         chatId={chatId as string}
-        selectedModelId="gemini"
         selectedVisibilityType="private"
         isReadonly={false}
         user={null}
@@ -135,6 +152,8 @@ export function Chat({ chatId }: ChatProps) {
           canScrollUp={canScrollUp}
           scrollToTop={scrollToTop}
           scrollTop={scrollTop}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
         />
       </form>
     </div>

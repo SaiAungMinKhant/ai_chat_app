@@ -28,7 +28,6 @@ function PureChatHeader({
   isReadonly,
 }: {
   chatId: string | undefined;
-  selectedModelId?: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   user: User | null;
@@ -72,6 +71,4 @@ function PureChatHeader({
   );
 }
 
-export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
-  return prevProps.selectedModelId === nextProps.selectedModelId;
-});
+export const ChatHeader = memo(PureChatHeader);
