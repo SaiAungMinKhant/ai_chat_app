@@ -18,28 +18,35 @@ export const sendMessage = mutation({
     let currentChatId = args.chatId;
 
     if (!currentChatId) {
-      const chatTitle = args.content.substring(0, 100);
+      // Create new chat
       currentChatId = await ctx.db.insert("chats", {
         userId,
-        title: chatTitle,
+        title: "New Chat",
         visibility: "private",
       });
     }
 
+    // Insert user message (for both new and existing chats)
     const model = args.model || "openai/gpt-4.1-nano";
-
     await ctx.db.insert("messages", {
       chatId: currentChatId,
       role: "user",
       content: args.content,
       model: model,
-      status: "completed",
     });
 
+    // Start AI response
     await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
       chatId: currentChatId,
       modelName: model,
     });
+
+    // Generate title after AI responds (only for new chats)
+    if (!args.chatId) {
+      await ctx.scheduler.runAfter(1000, internal.openrouter.generateTitle, {
+        chatId: currentChatId,
+      });
+    }
 
     return currentChatId;
   },
@@ -49,20 +56,34 @@ export const get = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
 
     const chat = await ctx.db.get(args.chatId);
-    if (!chat || chat.userId !== userId) {
-      throw new Error("Chat not found or unauthorized");
+    if (!chat) {
+      throw new Error("Chat not found");
+    }
+
+    // Allow access if user owns the chat or if chat is public
+    if (chat.visibility === "public" || (userId && chat.userId === userId)) {
+      return chat;
+    }
+
+    throw new Error("Chat not found or unauthorized");
+  },
+});
+
+export const getPublic = query({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.visibility !== "public") {
+      throw new Error("Public chat not found");
     }
 
     return chat;
   },
 });
 
-export const internalUpdateTitle = internalMutation({
+export const updateTitle = internalMutation({
   args: { chatId: v.id("chats"), title: v.string() },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.chatId, { title: args.title });

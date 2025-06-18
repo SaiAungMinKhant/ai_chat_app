@@ -84,6 +84,13 @@ export const chatStream = internalAction({
         });
       }
 
+      // Only generate title after the first AI response (2 messages total)
+      if (messages.length === 2) {
+        await ctx.runAction(internal.openrouter.generateTitle, {
+          chatId: args.chatId,
+        });
+      }
+
       return { content, chunks };
     } catch (error) {
       console.error("Error in OpenRouter chat stream:", error);
@@ -119,7 +126,7 @@ export const generateTitle = internalAction({
       Title:`,
     });
 
-    await ctx.runMutation(internal.chats.internalUpdateTitle, {
+    await ctx.runMutation(internal.chats.updateTitle, {
       chatId: args.chatId,
       title: title.trim(),
     });

@@ -12,20 +12,22 @@ export const list = query({
   args: { chatId: v.id("chats") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
 
-    // Get the chat to verify ownership
+    // Get the chat to verify ownership or public access
     const chat = await ctx.db.get(args.chatId);
-    if (!chat || chat.userId !== userId) {
-      throw new Error("Chat not found or unauthorized");
+    if (!chat) {
+      throw new Error("Chat not found");
     }
 
-    return await ctx.db
-      .query("messages")
-      .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
-      .collect();
+    // Allow access if user owns the chat or if chat is public
+    if (chat.visibility === "public" || (userId && chat.userId === userId)) {
+      return await ctx.db
+        .query("messages")
+        .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
+        .collect();
+    }
+
+    throw new Error("Chat not found or unauthorized");
   },
 });
 
@@ -82,10 +84,9 @@ export const sendWithOpenRouter = mutation({
     // Validate model name against allowed values
     const allowedModels = [
       "google/gemini-2.0-flash-001",
-      "deepseek/deepseek-prover-v2:free",
+      "deepseek/deepseek-r1-0528-qwen3-8b:free",
       "openai/gpt-4.1-nano",
       "anthropic/claude-3-haiku",
-      "user",
     ] as const;
 
     if (!allowedModels.includes(args.modelName as any)) {
@@ -305,5 +306,20 @@ export const stopGeneration = mutation({
       messageId: null,
       message: "No active message to stop",
     };
+  },
+});
+
+export const listPublic = query({
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.visibility !== "public") {
+      throw new Error("Public chat not found");
+    }
+
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
+      .collect();
   },
 });
