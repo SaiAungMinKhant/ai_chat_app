@@ -29,6 +29,19 @@ export default defineSchema({
       ),
     ),
   }).index("by_chatId", ["chatId"]),
+  templates: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    content: v.string(),
+    category: v.union(
+      v.literal("summary"),
+      v.literal("compare"),
+      v.literal("research"),
+      v.literal("custom"),
+    ),
+    isDefault: v.optional(v.boolean()),
+  }).index("by_userId", ["userId"]),
   users: defineTable({
     name: v.optional(v.string()),
     image: v.optional(v.string()),

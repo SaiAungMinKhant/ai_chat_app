@@ -1,6 +1,6 @@
-import { memo, useRef, useCallback } from "react";
+import { memo, useRef, useCallback, useState } from "react"; // useState is needed now for dialog
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Paperclip, Square } from "lucide-react";
+import { ArrowUp, ArrowDown, Square, LayoutTemplate } from "lucide-react"; // Import LayoutTemplate icon
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
 import { useNavigate } from "@tanstack/react-router";
@@ -19,6 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import {
+  Dialog, // Import Dialog components
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+import { TemplateSelector } from "./template-selector"; // Import your TemplateSelector component
+// Make sure the path is correct based on where template-selector.tsx is relative to ChatInput.tsx
+// e.g., if template-selector is in components/templates/, then "../../components/templates/template-selector"
+// Or, if it's in the same directory: "./template-selector"
 
 // interface Attachment {
 //   url: string;
@@ -65,7 +76,7 @@ function PureChatInput({
   onModelChange,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   const { width } = useWindowSize();
   const navigate = useNavigate();
   const user = useQuery(api.auth.isAuthenticated);
@@ -73,6 +84,9 @@ function PureChatInput({
 
   // const [attachments, setAttachments] = useState<Attachment[]>([]);
   // const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+
+  // State to manage the TemplateSelector dialog
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   // Check if there's a streaming message
   const isStreaming = chatMessages?.some(
@@ -107,55 +121,17 @@ function PureChatInput({
   };
 
   // File upload functionality
-  // const uploadFile = async (file: File): Promise<Attachment | undefined> => {
-  //   const formData = new FormData();
-  //   formData.append("file", file);
+  // const uploadFile = async (file: File): Promise<Attachment | undefined> => { /* ... */ };
+  // const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ }, []);
 
-  //   try {
-  //     // Replace with your file upload endpoint
-  //     const response = await fetch("/api/files/upload", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       return {
-  //         url: data.url,
-  //         name: data.pathname,
-  //         contentType: data.contentType,
-  //       };
-  //     }
-
-  //     const { error } = await response.json();
-  //     toast.error(error);
-  //   } catch (error) {
-  //     toast.error("Failed to upload file, please try again!");
-  //     console.error("Failed to upload file:", error);
-  //   }
-  // };
-
-  // const handleFileChange = useCallback(
-  //   async (event: React.ChangeEvent<HTMLInputElement>) => {
-  //     const files = Array.from(event.target.files || []);
-  //     setUploadQueue(files.map((file) => file.name));
-
-  //     try {
-  //       const uploadPromises = files.map((file) => uploadFile(file));
-  //       const uploadedAttachments = await Promise.all(uploadPromises);
-  //       const successfulAttachments = uploadedAttachments.filter(
-  //         (attachment): attachment is Attachment => attachment !== undefined,
-  //       );
-
-  //       setAttachments((current) => [...current, ...successfulAttachments]);
-  //     } catch (error) {
-  //       console.error("Error uploading files!", error);
-  //     } finally {
-  //       setUploadQueue([]);
-  //     }
-  //   },
-  //   [],
-  // );
+  // Callback to handle selection from TemplateSelector
+  const handleTemplateSelect = useCallback(
+    (content: string) => {
+      setInput(content);
+      setIsTemplateDialogOpen(false);
+    },
+    [setInput /*, adjustHeight*/],
+  );
 
   // Submit form
   const submitForm = useCallback(
@@ -163,18 +139,16 @@ function PureChatInput({
       e?.preventDefault();
 
       if (!input.trim() || isLoading) return;
-
       if (!user) {
         await navigate({ to: "/sign-in" });
         return;
       }
 
-      // Create a synthetic form event for onSubmit if we don't have one
       const formEvent = e as React.FormEvent;
       onSubmit(formEvent);
 
       // Reset form
-      // setAttachments([]);
+      // setAttachments([]); // If attachments are used, uncomment
       resetHeight();
 
       if (width && width > 768) {
@@ -233,7 +207,7 @@ function PureChatInput({
         />
       )} */}
 
-      {/* File input */}
+      {/* File input (commented out) */}
       {/* <input
         type="file"
         className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
@@ -243,7 +217,7 @@ function PureChatInput({
         tabIndex={-1}
       /> */}
 
-      {/* Attachments preview */}
+      {/* Attachments preview (commented out) */}
       {/* {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div className="flex flex-row gap-2 overflow-x-scroll items-end">
           {attachments.map((attachment) => (
@@ -274,7 +248,7 @@ function PureChatInput({
           placeholder={chatId ? "Type your message..." : "Start a new chat..."}
           value={input}
           onChange={handleInput}
-          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base border pb-10 pr-20 ${className || ""}`}
+          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-3xl !text-base border pb-10 pr-20 ${className || ""}`}
           rows={2}
           autoFocus
           onKeyDown={(e) => {
@@ -293,7 +267,7 @@ function PureChatInput({
           }}
         />
 
-        {/* Left side buttons - Model selector and Attachment */}
+        {/* Left side buttons - Model selector, Templates, and Attachment */}
         <div className="absolute bottom-2 left-2 flex items-center gap-1">
           {/* Model Selector */}
           {onModelChange && (
@@ -302,18 +276,18 @@ function PureChatInput({
               onValueChange={onModelChange}
               disabled={isLoading}
             >
-              <SelectTrigger className="px-2 py-1 h-8 text-xs">
+              <SelectTrigger className="px-2 py-1 h-8 text-xs rounded-full min-w-[125px]">
                 <SelectValue placeholder="Select a model" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-lg">
                 <SelectItem value="openai/gpt-4.1-nano">
                   GPT-4.1 Nano
                 </SelectItem>
                 <SelectItem value="google/gemini-2.0-flash-001">
                   Gemini 2.0 Flash
                 </SelectItem>
-                <SelectItem value="deepseek/deepseek-r1-0528-qwen3-8b:free">
-                  DeepSeek R1
+                <SelectItem value="deepseek/deepseek-chat-v3-0324:free">
+                  DeepSeek v3
                 </SelectItem>
                 <SelectItem value="anthropic/claude-3-haiku">
                   Claude 3 Haiku
@@ -322,17 +296,50 @@ function PureChatInput({
             </Select>
           )}
 
-          {/* Attachment button */}
-          <Button
+          {/* Template Selector Button */}
+          <Dialog
+            open={isTemplateDialogOpen}
+            onOpenChange={setIsTemplateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full"
+                disabled={isLoading}
+              >
+                <LayoutTemplate size={16} /> {/* Use the template icon */}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-6">
+              {" "}
+              {/* Adjust size for content */}
+              <h2 className="text-xl font-bold mb-4">
+                Select or Manage Templates
+              </h2>
+              <div className="flex-grow overflow-y-auto">
+                {" "}
+                {/* Enable scrolling for template content */}
+                <TemplateSelector
+                  onTemplateSelect={handleTemplateSelect}
+                  className="h-full"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Attachment button (still commented out) */}
+          {/* <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 rounded-full"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
           >
             <Paperclip size={16} />
-          </Button>
+          </Button> */}
         </div>
 
         {/* Submit/Stop button */}
@@ -352,7 +359,7 @@ function PureChatInput({
               type="button"
               size="sm"
               className="h-8 w-8 p-0 rounded-full"
-              disabled={!input.trim()}
+              disabled={!input.trim()} // Still relying on this as attachments are off
               onClick={(e) => void submitForm(e)}
             >
               <ArrowUp size={14} />

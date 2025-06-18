@@ -22,6 +22,7 @@ import type * as messages from "../messages.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as openai from "../openai.js";
 import type * as openrouter from "../openrouter.js";
+import type * as templates from "../templates.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   myFunctions: typeof myFunctions;
   openai: typeof openai;
   openrouter: typeof openrouter;
+  templates: typeof templates;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

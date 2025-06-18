@@ -84,7 +84,7 @@ export const sendWithOpenRouter = mutation({
     // Validate model name against allowed values
     const allowedModels = [
       "google/gemini-2.0-flash-001",
-      "deepseek/deepseek-r1-0528-qwen3-8b:free",
+      "deepseek/deepseek-chat-v3-0324:free",
       "openai/gpt-4.1-nano",
       "anthropic/claude-3-haiku",
     ] as const;
