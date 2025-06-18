@@ -11,9 +11,9 @@ function SignInPage() {
       <div className="w-full max-w-md space-y-6 p-6">
         <div className="space-y-2 text-center">
           <h2 className="text-3xl font-bold tracking-tight">Sign In</h2>
-          <p className="text-muted-foreground">
+          {/* <p className="text-muted-foreground">
             Enter your credentials to access your account
-          </p>
+          </p> */}
         </div>
         <SignInForm />
       </div>

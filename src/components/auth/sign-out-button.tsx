@@ -13,7 +13,11 @@ export function SignOutButton() {
 
   return (
     <>
-      <Button variant="default" onClick={() => void handleSignOut()}>
+      <Button
+        className="w-full"
+        variant="destructive"
+        onClick={() => void handleSignOut()}
+      >
         Sign out
       </Button>
     </>

@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+// import { Input } from "../ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  // CardDescription,
+  // CardHeader,
+  // CardTitle,
 } from "../ui/card";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  // const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,29 +32,29 @@ export function SignInForm() {
       });
   };
 
-  const handlePasswordSignIn = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    const formData = new FormData(e.target as HTMLFormElement);
-    formData.set("flow", flow);
-    signIn("password", formData)
-      .catch((error) => {
-        setError(error instanceof Error ? error.message : "Failed to sign in");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
+  // const handlePasswordSignIn = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   setError(null);
+  //   const formData = new FormData(e.target as HTMLFormElement);
+  //   formData.set("flow", flow);
+  //   signIn("password", formData)
+  //     .catch((error) => {
+  //       setError(error instanceof Error ? error.message : "Failed to sign in");
+  //     })
+  //     .finally(() => {
+  //       setIsLoading(false);
+  //     });
+  // };
 
   return (
     <Card className="w-[400px] mx-auto">
-      <CardHeader>
+      {/* <CardHeader>
         <CardTitle>{flow === "signIn" ? "Sign In" : "Sign Up"}</CardTitle>
         <CardDescription>
           {flow === "signIn" ? "Welcome back!" : "Create your account"}
         </CardDescription>
-      </CardHeader>
+      </CardHeader> */}
       <CardContent className="space-y-4">
         <Button
           variant="outline"
@@ -80,7 +80,7 @@ export function SignInForm() {
           Continue with Google
         </Button>
 
-        <div className="relative">
+        {/* <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
           </div>
@@ -124,12 +124,13 @@ export function SignInForm() {
               {flow === "signIn" ? "Sign up" : "Sign in"}
             </Button>
           </div>
-          {error && (
-            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-              {error}
-            </div>
-          )}
-        </form>
+    
+        </form> */}
+        {error && (
+          <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+            {error}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
