@@ -54,7 +54,7 @@ function PureChatMessages({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col-reverse h-full min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 relative"
+      className="flex flex-col-reverse h-full min-w-0 gap-6 overflow-y-scroll pt-20 pb-24 relative"
     >
       <div ref={endRef} className="h-4 w-full flex-shrink-0" />
 

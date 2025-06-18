@@ -38,12 +38,16 @@ export function PreviewMessage({
     >
       <div
         className={`rounded-lg px-4 py-2 whitespace-pre-wrap max-w-full overflow-hidden ${
-          message.role === "user" ? "bg-primary text-primary max-w-[80%]" : ""
+          message.role === "user" ? "bg-primary max-w-[50%]" : ""
         }`}
       >
         {message.content ? (
           <>
-            <MarkdownRenderer>{message.content}</MarkdownRenderer>
+            {message.role === "user" ? (
+              <div className="">{message.content}</div>
+            ) : (
+              <MarkdownRenderer>{message.content}</MarkdownRenderer>
+            )}
 
             {/* Status indicators for assistant messages */}
             {message.role === "assistant" && (

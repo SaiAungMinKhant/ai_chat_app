@@ -113,36 +113,38 @@ export function Chat({ chatId }: ChatProps) {
   };
 
   return (
-    <div className="flex flex-col justify-between min-w-0 min-h-screen h-full bg-background">
-      <div>
+    <div className="flex flex-col h-screen bg-background relative">
+      <ChatMessages
+        chatId={chatId as string}
+        messages={messages}
+        containerRef={containerRef}
+        endRef={endRef}
+      />
+
+      <div className="absolute top-0 left-0 right-0 z-20">
         <ChatHeader
           chatId={chatId as string}
           selectedVisibilityType="private"
           user={null}
         />
-
-        <ChatMessages
-          chatId={chatId as string}
-          messages={messages}
-          containerRef={containerRef}
-          endRef={endRef}
-        />
       </div>
 
-      <form className="flex sticky bottom-0 mx-auto px-4 bg-transparent pb-4 md:pb-6 gap-2 w-full md:max-w-3xl z-10">
-        <ChatInput
-          input={message}
-          setInput={setMessage}
-          onSubmit={(e) => void handleSubmit(e)}
-          chatId={chatId}
-          chatMessages={messages}
-          canScrollUp={canScrollUp}
-          scrollToTop={scrollToTop}
-          scrollTop={scrollTop}
-          selectedModel={selectedModel}
-          onModelChange={handleModelChange}
-        />
-      </form>
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+        <form className="flex mx-auto px-4 py-4 md:py-6 gap-2 w-full md:max-w-3xl">
+          <ChatInput
+            input={message}
+            setInput={setMessage}
+            onSubmit={(e) => void handleSubmit(e)}
+            chatId={chatId}
+            chatMessages={messages}
+            canScrollUp={canScrollUp}
+            scrollToTop={scrollToTop}
+            scrollTop={scrollTop}
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
+          />
+        </form>
+      </div>
     </div>
   );
 }
