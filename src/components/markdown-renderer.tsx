@@ -24,20 +24,23 @@ const markdownComponents: { [key: string]: React.ElementType } = {
     if (isCodeBlock) {
       return (
         <div className="my-4 rounded-lg overflow-hidden border border-zinc-700">
-          <SyntaxHighlighter
-            style={materialDark}
-            language={match[1]}
-            PreTag="div"
-            customStyle={{
-              margin: 0,
-              borderRadius: 0,
-              fontSize: "0.875rem",
-              lineHeight: "1.5",
-            }}
-            {...props}
-          >
-            {String(children).replace(/\n$/, "")}
-          </SyntaxHighlighter>
+          <div className="overflow-x-auto">
+            <SyntaxHighlighter
+              style={materialDark}
+              language={match[1]}
+              PreTag="div"
+              customStyle={{
+                margin: 0,
+                borderRadius: 0,
+                fontSize: "0.875rem",
+                lineHeight: "1.5",
+                minWidth: "100%",
+              }}
+              {...props}
+            >
+              {String(children).replace(/\n$/, "")}
+            </SyntaxHighlighter>
+          </div>
         </div>
       );
     }
@@ -57,6 +60,7 @@ const markdownComponents: { [key: string]: React.ElementType } = {
           border 
           border-zinc-300 
           dark:border-zinc-700
+          break-words
         `}
         {...props}
       >
@@ -112,7 +116,7 @@ const markdownComponents: { [key: string]: React.ElementType } = {
 
   p: ({ children, ...props }: ComponentProps) => (
     <p
-      className="mb-2 leading-relaxed text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap"
+      className="mb-2 leading-relaxed text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words"
       {...props}
     >
       {children}
@@ -181,11 +185,11 @@ const NonMemoizedMarkdownRenderer: React.FC<MarkdownProps> = ({
   children: markdown,
 }) => {
   return (
-    <div className="markdown-content">
+    <div className="markdown-content w-full overflow-hidden">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={markdownComponents}
-        className="prose dark:prose-invert max-w-none"
+        className="prose dark:prose-invert max-w-none break-words overflow-hidden"
       >
         {markdown}
       </ReactMarkdown>
