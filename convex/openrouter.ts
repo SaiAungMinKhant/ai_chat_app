@@ -3,13 +3,24 @@ import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { smoothStream, streamText, generateText } from "ai";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { api } from "./_generated/api";
 
-const apiKey = process.env.OPENROUTER_API_KEY;
-if (!apiKey) {
+const defaultApiKey = process.env.OPENROUTER_API_KEY;
+if (!defaultApiKey) {
   throw new Error("OPENROUTER_API_KEY environment variable is required");
 }
 
-const openrouter = createOpenRouter({ apiKey });
+// Helper function to get the appropriate API key
+async function getApiKey(ctx: any) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    return defaultApiKey;
+  }
+
+  const user = await ctx.runQuery(api.myFunctions.getCurrentUser);
+  return user?.openRouterApiKey || defaultApiKey;
+}
 
 export const chatStream = internalAction({
   args: {
@@ -35,6 +46,10 @@ export const chatStream = internalAction({
     );
 
     try {
+      // Get the appropriate API key
+      const apiKey = await getApiKey(ctx);
+      const openrouter = createOpenRouter({ apiKey });
+
       const { textStream } = streamText({
         model: openrouter(args.modelName),
         prompt: messages.map((message) => message.content).join("\n"),
@@ -115,6 +130,10 @@ export const generateTitle = internalAction({
       .slice(0, 2)
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join("\n\n");
+
+    // Get the appropriate API key
+    const apiKey = await getApiKey(ctx);
+    const openrouter = createOpenRouter({ apiKey });
 
     const { text: title } = await generateText({
       model: openrouter("google/gemini-2.0-flash-001"),

@@ -39,6 +39,126 @@ export const getCurrentUser = query({
   },
 });
 
+// API Key management functions
+export const setOpenRouterApiKey = action({
+  args: {
+    apiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    // Validate the API key format (OpenRouter keys start with "sk-or-")
+    if (!args.apiKey.startsWith("sk-or-")) {
+      throw new Error("Invalid OpenRouter API key format");
+    }
+
+    try {
+      // Encrypt the API key using the action
+      const encryptedApiKey = await ctx.runAction(
+        api.encryptionActions.encryptText,
+        {
+          text: args.apiKey,
+        },
+      );
+
+      console.log("Original API key:", args.apiKey);
+      console.log("Encrypted API key:", encryptedApiKey);
+      console.log("Encrypted length:", encryptedApiKey.length);
+
+      await ctx.runMutation(api.myFunctions.updateUserApiKey, {
+        userId,
+        encryptedApiKey,
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Encryption failed:", error);
+      throw new Error("Failed to encrypt API key. Please try again.");
+    }
+  },
+});
+
+// Helper mutation to update the user's API key
+export const updateUserApiKey = mutation({
+  args: {
+    userId: v.id("users"),
+    encryptedApiKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      openRouterApiKey: args.encryptedApiKey,
+    });
+  },
+});
+
+export const deleteOpenRouterApiKey = mutation({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    await ctx.db.patch(userId, {
+      openRouterApiKey: undefined,
+    });
+
+    return { success: true };
+  },
+});
+
+export const hasOpenRouterApiKey = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return false;
+
+    const user = await ctx.db.get(userId);
+    return !!user?.openRouterApiKey;
+  },
+});
+
+// Function to get decrypted API key (only for internal use)
+export const getDecryptedApiKey = action({
+  handler: async (ctx): Promise<string | null> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const user = await ctx.runQuery(api.myFunctions.getCurrentUser);
+    if (!user?.openRouterApiKey) return null;
+
+    try {
+      return await ctx.runAction(api.encryptionActions.decryptText, {
+        encryptedText: user.openRouterApiKey,
+      });
+    } catch (error) {
+      console.error("Failed to decrypt API key:", error);
+      return null;
+    }
+  },
+});
+
+// Function to check what's stored in the database (for debugging)
+export const checkStoredApiKey = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const user = await ctx.db.get(userId);
+    if (!user?.openRouterApiKey) return { hasKey: false };
+
+    return {
+      hasKey: true,
+      storedValue: user.openRouterApiKey,
+      length: user.openRouterApiKey.length,
+      isEncrypted:
+        user.openRouterApiKey.includes(":") &&
+        user.openRouterApiKey.length > 50,
+    };
+  },
+});
+
 // You can write data to the database via a mutation:
 export const addNumber = mutation({
   // Validators for arguments.
@@ -85,5 +205,38 @@ export const myAction = action({
     await ctx.runMutation(api.myFunctions.addNumber, {
       value: args.first,
     });
+  },
+});
+
+// Test function to verify encryption is working
+export const testEncryption = action({
+  args: {
+    testString: v.string(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    success: boolean;
+    original?: string;
+    encrypted?: string;
+    decrypted?: string;
+    matches?: boolean;
+    error?: string;
+  }> => {
+    try {
+      const result = await ctx.runAction(
+        api.encryptionActions.testEncryptionAction,
+        {
+          testString: args.testString,
+        },
+      );
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   },
 });

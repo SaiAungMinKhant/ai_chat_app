@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as chats from "../chats.js";
+import type * as encryptionActions from "../encryptionActions.js";
 import type * as gemini from "../gemini.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
@@ -33,6 +34,7 @@ import type * as openrouter from "../openrouter.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chats: typeof chats;
+  encryptionActions: typeof encryptionActions;
   gemini: typeof gemini;
   http: typeof http;
   messages: typeof messages;
