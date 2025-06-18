@@ -45,7 +45,7 @@ function PureChatMessages({
   const shouldShowThinkingMessage =
     messageStatus?.isUser && !messageStatus?.isCompleted;
 
-  const shouldShowStreamingIndicator = messageStatus?.isStreaming;
+  // const shouldShowStreamingIndicator = messageStatus?.isStreaming;
 
   const shouldShowErrorIndicator = messageStatus?.hasError;
 

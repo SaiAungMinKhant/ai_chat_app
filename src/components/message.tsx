@@ -38,9 +38,7 @@ export function PreviewMessage({
     >
       <div
         className={`rounded-lg px-4 py-2 whitespace-pre-wrap max-w-full overflow-hidden ${
-          message.role === "user"
-            ? "bg-primary-foreground text-primary max-w-[80%]"
-            : ""
+          message.role === "user" ? "bg-primary text-primary max-w-[80%]" : ""
         }`}
       >
         {message.content ? (

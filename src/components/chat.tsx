@@ -113,22 +113,24 @@ export function Chat({ chatId }: ChatProps) {
   };
 
   return (
-    <div className="flex flex-col min-w-0 h-dvh bg-background">
-      <ChatHeader
-        chatId={chatId as string}
-        selectedVisibilityType="private"
-        isReadonly={false}
-        user={null}
-      />
+    <div className="flex flex-col min-w-0 min-h-screen h-full bg-background">
+      <div>
+        <ChatHeader
+          chatId={chatId as string}
+          selectedVisibilityType="private"
+          isReadonly={false}
+          user={null}
+        />
 
-      <ChatMessages
-        chatId={chatId as string}
-        messages={messages}
-        containerRef={containerRef}
-        endRef={endRef}
-      />
+        <ChatMessages
+          chatId={chatId as string}
+          messages={messages}
+          containerRef={containerRef}
+          endRef={endRef}
+        />
+      </div>
 
-      <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+      <form className="flex sticky bottom-0 mx-auto px-4 bg-transparent pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
         <ChatInput
           input={message}
           setInput={setMessage}

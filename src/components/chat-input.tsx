@@ -12,6 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PreviewAttachment } from "./preview-attachment";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 interface Attachment {
   url: string;
   name: string;
@@ -266,7 +274,7 @@ function PureChatInput({
           placeholder={chatId ? "Type your message..." : "Start a new chat..."}
           value={input}
           onChange={handleInput}
-          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-20 ${className || ""}`}
+          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base border pb-10 pr-20 ${className || ""}`}
           rows={2}
           autoFocus
           onKeyDown={(e) => {
@@ -289,21 +297,29 @@ function PureChatInput({
         <div className="absolute bottom-2 left-2 flex items-center gap-1">
           {/* Model Selector */}
           {onModelChange && (
-            <select
+            <Select
               value={selectedModel}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="px-2 py-1 text-xs border rounded bg-background text-foreground"
+              onValueChange={onModelChange}
               disabled={isLoading}
             >
-              <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
-              <option value="google/gemini-2.0-flash-001">
-                Gemini 2.0 Flash
-              </option>
-              <option value="deepseek/deepseek-prover-v2:free">
-                DeepSeek Prover
-              </option>
-              <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
-            </select>
+              <SelectTrigger className="px-2 py-1 h-8 text-xs">
+                <SelectValue placeholder="Select a model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai/gpt-4.1-nano">
+                  GPT-4.1 Nano
+                </SelectItem>
+                <SelectItem value="google/gemini-2.0-flash-001">
+                  Gemini 2.0 Flash
+                </SelectItem>
+                <SelectItem value="deepseek/deepseek-prover-v2:free">
+                  DeepSeek Prover
+                </SelectItem>
+                <SelectItem value="anthropic/claude-3-haiku">
+                  Claude 3 Haiku
+                </SelectItem>
+              </SelectContent>
+            </Select>
           )}
 
           {/* Attachment button */}
