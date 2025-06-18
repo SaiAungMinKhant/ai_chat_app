@@ -1,4 +1,4 @@
-import { memo, useRef, useCallback, useState } from "react";
+import { memo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, ArrowDown, Paperclip, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { Id } from "../../convex/_generated/dataModel";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PreviewAttachment } from "./preview-attachment";
+// import { PreviewAttachment } from "./preview-attachment";
 
 import {
   Select,
@@ -20,11 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Attachment {
-  url: string;
-  name: string;
-  contentType: string;
-}
+// interface Attachment {
+//   url: string;
+//   name: string;
+//   contentType: string;
+// }
 
 interface Message {
   _id: Id<"messages">;
@@ -71,8 +71,8 @@ function PureChatInput({
   const user = useQuery(api.auth.isAuthenticated);
   const stopGeneration = useMutation(api.messages.stopGeneration);
 
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+  // const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
   // Check if there's a streaming message
   const isStreaming = chatMessages?.some(
@@ -107,55 +107,55 @@ function PureChatInput({
   };
 
   // File upload functionality
-  const uploadFile = async (file: File): Promise<Attachment | undefined> => {
-    const formData = new FormData();
-    formData.append("file", file);
+  // const uploadFile = async (file: File): Promise<Attachment | undefined> => {
+  //   const formData = new FormData();
+  //   formData.append("file", file);
 
-    try {
-      // Replace with your file upload endpoint
-      const response = await fetch("/api/files/upload", {
-        method: "POST",
-        body: formData,
-      });
+  //   try {
+  //     // Replace with your file upload endpoint
+  //     const response = await fetch("/api/files/upload", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          url: data.url,
-          name: data.pathname,
-          contentType: data.contentType,
-        };
-      }
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       return {
+  //         url: data.url,
+  //         name: data.pathname,
+  //         contentType: data.contentType,
+  //       };
+  //     }
 
-      const { error } = await response.json();
-      toast.error(error);
-    } catch (error) {
-      toast.error("Failed to upload file, please try again!");
-      console.error("Failed to upload file:", error);
-    }
-  };
+  //     const { error } = await response.json();
+  //     toast.error(error);
+  //   } catch (error) {
+  //     toast.error("Failed to upload file, please try again!");
+  //     console.error("Failed to upload file:", error);
+  //   }
+  // };
 
-  const handleFileChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || []);
-      setUploadQueue(files.map((file) => file.name));
+  // const handleFileChange = useCallback(
+  //   async (event: React.ChangeEvent<HTMLInputElement>) => {
+  //     const files = Array.from(event.target.files || []);
+  //     setUploadQueue(files.map((file) => file.name));
 
-      try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfulAttachments = uploadedAttachments.filter(
-          (attachment): attachment is Attachment => attachment !== undefined,
-        );
+  //     try {
+  //       const uploadPromises = files.map((file) => uploadFile(file));
+  //       const uploadedAttachments = await Promise.all(uploadPromises);
+  //       const successfulAttachments = uploadedAttachments.filter(
+  //         (attachment): attachment is Attachment => attachment !== undefined,
+  //       );
 
-        setAttachments((current) => [...current, ...successfulAttachments]);
-      } catch (error) {
-        console.error("Error uploading files!", error);
-      } finally {
-        setUploadQueue([]);
-      }
-    },
-    [],
-  );
+  //       setAttachments((current) => [...current, ...successfulAttachments]);
+  //     } catch (error) {
+  //       console.error("Error uploading files!", error);
+  //     } finally {
+  //       setUploadQueue([]);
+  //     }
+  //   },
+  //   [],
+  // );
 
   // Submit form
   const submitForm = useCallback(
@@ -174,7 +174,7 @@ function PureChatInput({
       onSubmit(formEvent);
 
       // Reset form
-      setAttachments([]);
+      // setAttachments([]);
       resetHeight();
 
       if (width && width > 768) {
@@ -234,17 +234,17 @@ function PureChatInput({
       )} */}
 
       {/* File input */}
-      <input
+      {/* <input
         type="file"
         className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
         ref={fileInputRef}
         multiple
         onChange={(e) => void handleFileChange(e)}
         tabIndex={-1}
-      />
+      /> */}
 
       {/* Attachments preview */}
-      {(attachments.length > 0 || uploadQueue.length > 0) && (
+      {/* {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div className="flex flex-row gap-2 overflow-x-scroll items-end">
           {attachments.map((attachment) => (
             <PreviewAttachment
@@ -265,7 +265,7 @@ function PureChatInput({
             />
           ))}
         </div>
-      )}
+      )} */}
 
       {/* Main input form */}
       <div className="relative">
@@ -352,7 +352,7 @@ function PureChatInput({
               type="button"
               size="sm"
               className="h-8 w-8 p-0 rounded-full"
-              disabled={!input.trim() || uploadQueue.length > 0}
+              disabled={!input.trim()}
               onClick={(e) => void submitForm(e)}
             >
               <ArrowUp size={14} />
