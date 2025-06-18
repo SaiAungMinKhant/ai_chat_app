@@ -57,7 +57,7 @@ export function AppSidebar({ ...props }) {
                 <Button
                   variant="ghost"
                   type="button"
-                  className="p-2 h-fit"
+                  className="p-2 rounded-full"
                   onClick={() => {
                     setOpenMobile(false);
                     void navigate({ to: "/chat", search: { id: "" } });

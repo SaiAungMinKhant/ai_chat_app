@@ -1,4 +1,3 @@
-import { memo } from "react";
 import { Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
@@ -58,7 +57,4 @@ const PureChatItem = ({
   );
 };
 
-export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  if (prevProps.isActive !== nextProps.isActive) return false;
-  return true;
-});
+export const ChatItem = PureChatItem;
