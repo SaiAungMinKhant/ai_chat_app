@@ -16,10 +16,9 @@ export const chatStream = internalAction({
   args: {
     chatId: v.id("chats"),
     onUpdate: v.optional(v.any()),
+    stopSequences: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    console.log("Starting chat stream for chatId:", args.chatId);
-
     const messages = await ctx.runQuery(internal.messages.internalList, {
       chatId: args.chatId,
     });
@@ -30,6 +29,7 @@ export const chatStream = internalAction({
         chatId: args.chatId,
         role: "assistant",
         content: "",
+        status: "streaming",
       },
     );
 
@@ -37,6 +37,7 @@ export const chatStream = internalAction({
       const { textStream } = streamText({
         model: model,
         prompt: messages.map((message) => message.content).join("\n"),
+        stopSequences: args.stopSequences || [],
         experimental_transform: smoothStream({
           delayInMs: 10,
           chunking: "word",
@@ -50,16 +51,36 @@ export const chatStream = internalAction({
         content += part;
         chunks.push(part);
 
-        // Update message in database
+        const currentMessage = await ctx.runQuery(
+          internal.messages.internalGet,
+          {
+            messageId: assistantMessageId,
+          },
+        );
+
+        if (currentMessage?.status === "stopped") {
+          break;
+        }
+
         await ctx.runMutation(internal.messages.internalUpdate, {
           messageId: assistantMessageId,
           content,
         });
 
-        // Call update callback if provided
         if (args.onUpdate) {
           args.onUpdate(part);
         }
+      }
+
+      const finalMessage = await ctx.runQuery(internal.messages.internalGet, {
+        messageId: assistantMessageId,
+      });
+
+      if (finalMessage?.status !== "stopped") {
+        await ctx.runMutation(internal.messages.internalUpdate, {
+          messageId: assistantMessageId,
+          status: "completed",
+        });
       }
 
       return { content, chunks };
@@ -68,6 +89,7 @@ export const chatStream = internalAction({
       await ctx.runMutation(internal.messages.internalUpdate, {
         messageId: assistantMessageId,
         content: "Error: Could not get a response from the AI.",
+        status: "error",
       });
       throw error;
     }

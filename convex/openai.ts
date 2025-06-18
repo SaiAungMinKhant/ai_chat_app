@@ -25,6 +25,7 @@ export const chat = internalMutation({
         chatId: args.chatId,
         role: "assistant",
         content: "",
+        status: "streaming",
       },
     );
 
@@ -41,9 +42,29 @@ export const chat = internalMutation({
 
     for await (const part of textStream) {
       content += part;
+
+      const currentMessage = await ctx.runQuery(internal.messages.internalGet, {
+        messageId: assistantMessageId,
+      });
+
+      if (currentMessage?.status === "stopped") {
+        break;
+      }
+
       await ctx.runMutation(internal.messages.internalUpdate, {
         messageId: assistantMessageId,
         content,
+      });
+    }
+
+    const finalMessage = await ctx.runQuery(internal.messages.internalGet, {
+      messageId: assistantMessageId,
+    });
+
+    if (finalMessage?.status !== "stopped") {
+      await ctx.runMutation(internal.messages.internalUpdate, {
+        messageId: assistantMessageId,
+        status: "completed",
       });
     }
   },

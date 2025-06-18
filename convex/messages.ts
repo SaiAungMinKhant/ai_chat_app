@@ -51,6 +51,7 @@ export const send = mutation({
       role: "user",
       model: "user",
       content: args.content,
+      status: "completed",
     });
 
     // Schedule the AI response generation
@@ -98,6 +99,7 @@ export const sendWithOpenRouter = mutation({
       role: "user",
       model: args.modelName,
       content: args.content,
+      status: "completed",
     });
 
     // Schedule the OpenRouter AI response generation
@@ -119,12 +121,26 @@ export const internalList = internalQuery({
   },
 });
 
+export const internalGet = internalQuery({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.messageId);
+  },
+});
+
 export const internalCreate = internalMutation({
   args: {
     chatId: v.id("chats"),
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     model: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("streaming"),
+        v.literal("completed"),
+        v.literal("error"),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     const messageId = await ctx.db.insert("messages", {
@@ -132,6 +148,7 @@ export const internalCreate = internalMutation({
       role: args.role,
       model: args.model,
       content: args.content,
+      status: args.status,
     });
     return messageId;
   },
@@ -140,10 +157,25 @@ export const internalCreate = internalMutation({
 export const internalUpdate = internalMutation({
   args: {
     messageId: v.id("messages"),
-    content: v.string(),
+    content: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("streaming"),
+        v.literal("completed"),
+        v.literal("error"),
+        v.literal("stopped"),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.messageId, { content: args.content });
+    const updateData: any = {};
+    if (args.content !== undefined) {
+      updateData.content = args.content;
+    }
+    if (args.status !== undefined) {
+      updateData.status = args.status;
+    }
+    await ctx.db.patch(args.messageId, updateData);
   },
 });
 
@@ -175,5 +207,103 @@ export const get = query({
     }
 
     return chat;
+  },
+});
+
+export const retryGeneration = mutation({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify user owns this chat
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
+    // Find the last assistant message with error status
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
+      .order("desc")
+      .collect();
+
+    const lastErrorMessage = messages.find(
+      (msg) => msg.role === "assistant" && msg.status === "error",
+    );
+
+    if (!lastErrorMessage) {
+      throw new Error("No failed message found to retry");
+    }
+
+    // Delete the failed message
+    await ctx.db.delete(lastErrorMessage._id);
+
+    // Re-trigger the AI response with the same model
+    await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
+      chatId: args.chatId,
+      modelName: lastErrorMessage.model || "openai/gpt-4.1-nano",
+    });
+  },
+});
+
+export const stopGeneration = mutation({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
+      .order("desc")
+      .collect();
+
+    const streamingMessage = messages.find(
+      (msg) => msg.role === "assistant" && msg.status === "streaming",
+    );
+
+    if (streamingMessage) {
+      await ctx.db.patch(streamingMessage._id, {
+        status: "stopped",
+      });
+
+      return { success: true, messageId: streamingMessage._id };
+    }
+
+    const lastAssistantMessage = messages.find(
+      (msg) =>
+        msg.role === "assistant" &&
+        msg.status !== "completed" &&
+        msg.status !== "stopped",
+    );
+
+    if (lastAssistantMessage) {
+      await ctx.db.patch(lastAssistantMessage._id, {
+        status: "stopped",
+      });
+
+      return { success: true, messageId: lastAssistantMessage._id };
+    }
+
+    return {
+      success: true,
+      messageId: null,
+      message: "No active message to stop",
+    };
   },
 });

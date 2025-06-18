@@ -20,6 +20,14 @@ export default defineSchema({
     role: v.union(v.literal("user"), v.literal("assistant")),
     model: v.optional(v.string()),
     content: v.string(),
+    status: v.optional(
+      v.union(
+        v.literal("streaming"),
+        v.literal("completed"),
+        v.literal("error"),
+        v.literal("stopped"),
+      ),
+    ),
   }).index("by_chatId", ["chatId"]),
   users: defineTable({
     name: v.optional(v.string()),

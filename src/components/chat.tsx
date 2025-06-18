@@ -14,7 +14,6 @@ interface ChatProps {
 
 export function Chat({ chatId }: ChatProps) {
   const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4.1-nano");
   const navigate = useNavigate();
 
@@ -84,10 +83,7 @@ export function Chat({ chatId }: ChatProps) {
     e.preventDefault();
     if (!message.trim()) return;
 
-    console.log("Submitting message with model:", selectedModel);
-
     try {
-      setIsLoading(true);
       if (chatId) {
         await sendMessage({
           chatId: chatId as Id<"chats">,
@@ -99,12 +95,6 @@ export function Chat({ chatId }: ChatProps) {
           content: message,
           model: selectedModel,
         });
-        console.log(
-          "Created new chat with model:",
-          selectedModel,
-          "chatId:",
-          newChatId,
-        );
         await navigate({
           to: "/chat",
           search: { id: newChatId },
@@ -114,8 +104,6 @@ export function Chat({ chatId }: ChatProps) {
       setMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -136,7 +124,6 @@ export function Chat({ chatId }: ChatProps) {
       <ChatMessages
         chatId={chatId as string}
         messages={messages}
-        isLoading={isLoading}
         containerRef={containerRef}
         endRef={endRef}
       />
@@ -145,9 +132,8 @@ export function Chat({ chatId }: ChatProps) {
         <ChatInput
           input={message}
           setInput={setMessage}
-          onSubmit={handleSubmit}
+          onSubmit={(e) => void handleSubmit(e)}
           chatId={chatId}
-          isLoading={isLoading}
           chatMessages={messages}
           canScrollUp={canScrollUp}
           scrollToTop={scrollToTop}

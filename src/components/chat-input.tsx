@@ -4,8 +4,9 @@ import { ArrowUp, ArrowDown, Paperclip, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,16 +18,24 @@ interface Attachment {
   contentType: string;
 }
 
+interface Message {
+  _id: Id<"messages">;
+  role: "user" | "assistant";
+  content?: string;
+  status?: "streaming" | "completed" | "error" | "stopped";
+  model?: string;
+}
+
 interface ChatInputProps {
   chatId?: string;
   input: string;
   setInput: (input: string) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void;
   isLoading?: boolean;
   onStop?: () => void;
   className?: string;
   showSuggestions?: boolean;
-  chatMessages?: { _id: string; role: string; content?: string }[];
+  chatMessages?: Message[];
   canScrollUp: boolean;
   scrollToTop: () => void;
   scrollTop: number;
@@ -39,13 +48,11 @@ function PureChatInput({
   setInput,
   onSubmit,
   isLoading = false,
-  onStop,
   className,
   chatMessages,
   chatId,
   canScrollUp,
   scrollToTop,
-  scrollTop,
   selectedModel = "openai/gpt-4.1-nano",
   onModelChange,
 }: ChatInputProps) {
@@ -54,22 +61,20 @@ function PureChatInput({
   const { width } = useWindowSize();
   const navigate = useNavigate();
   const user = useQuery(api.auth.isAuthenticated);
+  const stopGeneration = useMutation(api.messages.stopGeneration);
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
+  // Check if there's a streaming message
+  const isStreaming = chatMessages?.some(
+    (msg) => msg.role === "assistant" && msg.status === "streaming",
+  );
+
   const handleScrollToTop = (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    console.log("Scroll button clicked, current scrollTop:", scrollTop);
     scrollToTop();
   };
-
-  // console.log("ChatInput render:", {
-  //   canScrollUp,
-  //   scrollTop,
-  //   messagesLength: chatMessages?.length,
-  // });
 
   // Auto-resize textarea
   const adjustHeight = useCallback(() => {
@@ -158,7 +163,7 @@ function PureChatInput({
 
       // Create a synthetic form event for onSubmit if we don't have one
       const formEvent = e as React.FormEvent;
-      await onSubmit(formEvent);
+      onSubmit(formEvent);
 
       // Reset form
       setAttachments([]);
@@ -170,6 +175,23 @@ function PureChatInput({
     },
     [input, isLoading, onSubmit, resetHeight, width, user, navigate],
   );
+
+  const handleStopGeneration = () => {
+    if (!chatId) return;
+
+    void stopGeneration({ chatId: chatId as Id<"chats"> })
+      .then((result) => {
+        if (result.success) {
+          // Successfully stopped generation
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to stop generation:", error);
+        if (!error.message?.includes("No streaming message found")) {
+          toast.error("Failed to stop generation");
+        }
+      });
+  };
 
   return (
     <div className="relative w-full flex flex-col gap-4">
@@ -238,84 +260,89 @@ function PureChatInput({
       )}
 
       {/* Main input form */}
-
-      <Textarea
-        ref={textareaRef}
-        placeholder={chatId ? "Type your message..." : "Start a new chat..."}
-        value={input}
-        onChange={handleInput}
-        className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-20 ${className || ""}`}
-        rows={2}
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            if (isLoading) {
-              toast.error("Please wait for the response to finish!");
-            } else {
-              void submitForm(e);
+      <div className="relative">
+        <Textarea
+          ref={textareaRef}
+          placeholder={chatId ? "Type your message..." : "Start a new chat..."}
+          value={input}
+          onChange={handleInput}
+          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 pr-20 ${className || ""}`}
+          rows={2}
+          autoFocus
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              !e.shiftKey &&
+              !e.nativeEvent.isComposing
+            ) {
+              e.preventDefault();
+              if (isLoading) {
+                toast.error("Please wait for the response to finish!");
+              } else {
+                void submitForm(e);
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
 
-      {/* Left side buttons - Model selector and Attachment */}
-      <div className="absolute bottom-2 left-2 flex items-center gap-1">
-        {/* Model Selector */}
-        {onModelChange && (
-          <select
-            value={selectedModel}
-            onChange={(e) => onModelChange(e.target.value)}
-            className="px-2 py-1 text-xs border rounded bg-background text-foreground"
+        {/* Left side buttons - Model selector and Attachment */}
+        <div className="absolute bottom-2 left-2 flex items-center gap-1">
+          {/* Model Selector */}
+          {onModelChange && (
+            <select
+              value={selectedModel}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="px-2 py-1 text-xs border rounded bg-background text-foreground"
+              disabled={isLoading}
+            >
+              <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+              <option value="google/gemini-2.0-flash-001">
+                Gemini 2.0 Flash
+              </option>
+              <option value="deepseek/deepseek-prover-v2:free">
+                DeepSeek Prover
+              </option>
+              <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
+            </select>
+          )}
+
+          {/* Attachment button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
           >
-            <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
-            <option value="google/gemini-2.0-flash-001">
-              Gemini 2.0 Flash
-            </option>
-            <option value="deepseek/deepseek-prover-v2:free">
-              DeepSeek Prover
-            </option>
-            <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
-          </select>
-        )}
-
-        {/* Attachment button */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLoading}
-        >
-          <Paperclip size={16} />
-        </Button>
-      </div>
-
-      {/* Submit/Stop button */}
-      <div className="absolute bottom-2 right-2">
-        {isLoading ? (
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-full"
-            onClick={onStop}
-            variant="outline"
-          >
-            <Square size={14} />
+            <Paperclip size={16} />
           </Button>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-full"
-            disabled={!input.trim() || uploadQueue.length > 0}
-            onClick={(e) => void submitForm(e)}
-          >
-            <ArrowUp size={14} />
-          </Button>
-        )}
+        </div>
+
+        {/* Submit/Stop button */}
+        <div className="absolute bottom-2 right-2">
+          {isStreaming ? (
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-full"
+              onClick={handleStopGeneration}
+              variant="destructive"
+            >
+              <Square size={14} />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-full"
+              disabled={!input.trim() || uploadQueue.length > 0}
+              onClick={(e) => void submitForm(e)}
+            >
+              <ArrowUp size={14} />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -330,5 +357,17 @@ export const ChatInput = memo(PureChatInput, (prevProps, nextProps) => {
   if (prevProps.chatMessages?.length !== nextProps.chatMessages?.length)
     return false;
   if (prevProps.selectedModel !== nextProps.selectedModel) return false;
+
+  // Check if any message status has changed (important for streaming/stopped states)
+  if (prevProps.chatMessages && nextProps.chatMessages) {
+    for (let i = 0; i < prevProps.chatMessages.length; i++) {
+      const prevMsg = prevProps.chatMessages[i];
+      const nextMsg = nextProps.chatMessages[i];
+      if (prevMsg.status !== nextMsg.status) {
+        return false;
+      }
+    }
+  }
+
   return true;
 });

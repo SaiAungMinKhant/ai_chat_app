@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -33,6 +33,7 @@ export const sendMessage = mutation({
       role: "user",
       content: args.content,
       model: model,
+      status: "completed",
     });
 
     await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
@@ -58,6 +59,13 @@ export const get = query({
     }
 
     return chat;
+  },
+});
+
+export const internalUpdateTitle = internalMutation({
+  args: { chatId: v.id("chats"), title: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.chatId, { title: args.title });
   },
 });
 
