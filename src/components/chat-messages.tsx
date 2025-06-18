@@ -54,20 +54,12 @@ function PureChatMessages({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col-reverse min-w-0 gap-6 flex-1 overflow-y-auto pt-4 relative"
-      style={{ height: "calc(100vh - 200px)" }}
+      className="flex flex-col-reverse h-full min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 relative"
     >
       <div ref={endRef} className="h-4 w-full flex-shrink-0" />
 
       <div className="flex flex-col-reverse w-full max-w-3xl mx-auto px-4 space-y-4 space-y-reverse pb-4">
         {shouldShowThinkingMessage && <ThinkingMessage />}
-
-        {shouldShowStreamingIndicator && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-            <span>AI is generating response...</span>
-          </div>
-        )}
 
         {shouldShowErrorIndicator && (
           <div className="flex items-center gap-2 text-sm text-red-500 px-4 py-2 bg-red-50 rounded-lg">

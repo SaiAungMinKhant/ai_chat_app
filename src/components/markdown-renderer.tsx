@@ -2,7 +2,9 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { materialDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MarkdownProps {
   children: string;
@@ -16,6 +18,41 @@ interface ComponentProps {
   [key: string]: any;
 }
 
+const CodeBlockHeader: React.FC<{ language: string; code: string }> = ({
+  language,
+  code,
+}) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-4 py-2 text-xs border-b border-zinc-700">
+      <span className="font-mono uppercase">{language}</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void copyToClipboard()}
+        className="h-6 w-6 p-0 hover:bg-zinc-700"
+      >
+        {copied ? (
+          <Check size={12} className="text-green-400" />
+        ) : (
+          <Copy size={12} />
+        )}
+      </Button>
+    </div>
+  );
+};
+
 const markdownComponents: { [key: string]: React.ElementType } = {
   code: ({ node, inline, className, children, ...props }: ComponentProps) => {
     const match = /language-(\w+)/.exec(className || "");
@@ -24,9 +61,13 @@ const markdownComponents: { [key: string]: React.ElementType } = {
     if (isCodeBlock) {
       return (
         <div className="my-4 rounded-lg overflow-hidden border border-zinc-700">
+          <CodeBlockHeader
+            language={match[1]}
+            code={String(children).replace(/\n$/, "")}
+          />
           <div className="overflow-x-auto">
             <SyntaxHighlighter
-              style={materialDark}
+              style={coldarkDark}
               language={match[1]}
               PreTag="div"
               customStyle={{

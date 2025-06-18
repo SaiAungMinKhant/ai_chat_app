@@ -90,7 +90,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Query chats from Convex
-  const chatHistory = useQuery(api.chats.list, user ? {} : "skip");
+  const chatHistory = useQuery(api.chats.list, user ? { limit: 20 } : "skip");
   const deleteChat = useMutation(api.chats.deleteChat);
 
   const handleDelete = async () => {
