@@ -1,13 +1,12 @@
 import type { ComponentProps } from "react";
 import { PanelLeft } from "lucide-react";
-
 import { type SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "./ui/button";
 
 export function SidebarToggle({
   className,
@@ -20,13 +19,15 @@ export function SidebarToggle({
         <Button
           data-testid="sidebar-toggle-button"
           onClick={toggleSidebar}
-          variant="outline"
-          className="md:px-2 md:h-fit"
+          variant="ghost"
+          className={`p-2 rounded-full ${className || ""}`}
+          aria-label="Toggle Sidebar"
+          size="icon"
         >
           <PanelLeft size={16} />
         </Button>
       </TooltipTrigger>
-      <TooltipContent align="start">Toggle Sidebar</TooltipContent>
+      <TooltipContent>Toggle Sidebar</TooltipContent>
     </Tooltip>
   );
 }

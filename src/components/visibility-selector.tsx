@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { ChevronDown, CheckCircle, Globe, Lock } from "lucide-react";
+import { ChevronDown, Globe, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,15 +65,17 @@ export function VisibilitySelector({
         <Button
           data-testid="visibility-selector"
           variant="outline"
-          className="hidden md:flex md:px-2 md:h-[34px]"
+          className="hidden md:flex md:px-2 md:h-fit gap-1.5 rounded-full"
         >
           {selectedVisibility?.icon}
-          {selectedVisibility?.label}
+          <span className="hidden md:inline">
+            {selectedVisibility?.label}
+          </span>{" "}
           <ChevronDown size={16} />
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" className="min-w-[300px]">
+      <DropdownMenuContent align="start" className="rounded-3xl p-1">
         {visibilities.map((visibility) => (
           <DropdownMenuItem
             data-testid={`visibility-selector-item-${visibility.id}`}
@@ -82,7 +84,7 @@ export function VisibilitySelector({
               void setVisibilityType(visibility.id);
               setOpen(false);
             }}
-            className="gap-4 group/item flex flex-row justify-between items-center"
+            className="gap-4 group/item flex flex-row justify-between items-center rounded-2xl"
             data-active={visibility.id === visibilityType}
           >
             <div className="flex flex-col gap-1 items-start">
@@ -92,9 +94,6 @@ export function VisibilitySelector({
                   {visibility.description}
                 </div>
               )}
-            </div>
-            <div className="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100">
-              <CheckCircle size={16} />
             </div>
           </DropdownMenuItem>
         ))}

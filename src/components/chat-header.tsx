@@ -25,11 +25,9 @@ type User = {
 function PureChatHeader({
   chatId,
   selectedVisibilityType,
-  isReadonly,
 }: {
   chatId: string | undefined;
   selectedVisibilityType: VisibilityType;
-  isReadonly: boolean;
   user: User | null;
 }) {
   const navigate = useNavigate();
@@ -41,7 +39,8 @@ function PureChatHeader({
   };
 
   return (
-    <header className="flex sticky top-0 py-1.5 justify-between items-center px-2 md:px-2 gap-2">
+    // z-10 is to make sure toggle button to be able use
+    <header className="flex sticky top-0 py-1.5 justify-between items-center px-2 md:px-2 gap-2 z-10">
       <div className="flex items-center gap-2">
         <SidebarToggle />
 
@@ -49,8 +48,8 @@ function PureChatHeader({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
-                className="order-2 md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
+                variant="ghost"
+                className="order-2 md:order-1 p-2 rounded-full"
                 onClick={handleNewChat}
               >
                 <PlusIcon />
@@ -62,7 +61,7 @@ function PureChatHeader({
         )}
       </div>
 
-      {!isReadonly && chatId && (
+      {chatId && (
         <VisibilitySelector
           chatId={chatId}
           selectedVisibilityType={selectedVisibilityType}

@@ -312,8 +312,8 @@ function PureChatInput({
                 <SelectItem value="google/gemini-2.0-flash-001">
                   Gemini 2.0 Flash
                 </SelectItem>
-                <SelectItem value="deepseek/deepseek-prover-v2:free">
-                  DeepSeek Prover
+                <SelectItem value="deepseek/deepseek-r1-0528-qwen3-8b:free">
+                  DeepSeek R1
                 </SelectItem>
                 <SelectItem value="anthropic/claude-3-haiku">
                   Claude 3 Haiku
