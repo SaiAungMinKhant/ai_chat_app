@@ -1,6 +1,6 @@
 "use node";
 
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
@@ -40,39 +40,16 @@ function decrypt(encryptedText: string): string {
   return decrypted;
 }
 
-export const encryptText = action({
+export const encryptText = internalAction({
   args: { text: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return encrypt(args.text);
   },
 });
 
-export const decryptText = action({
+export const decryptText = internalAction({
   args: { encryptedText: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     return decrypt(args.encryptedText);
-  },
-});
-
-export const testEncryptionAction = action({
-  args: { testString: v.string() },
-  handler: async (ctx, args) => {
-    try {
-      const encrypted = encrypt(args.testString);
-      const decrypted = decrypt(encrypted);
-
-      return {
-        success: true,
-        original: args.testString,
-        encrypted: encrypted,
-        decrypted: decrypted,
-        matches: args.testString === decrypted,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
   },
 });

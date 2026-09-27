@@ -38,6 +38,7 @@ export const sendMessage = mutation({
     // Start AI response
     await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
       chatId: currentChatId,
+      userId,
       modelName: model,
     });
 
@@ -45,6 +46,7 @@ export const sendMessage = mutation({
     if (!args.chatId) {
       await ctx.scheduler.runAfter(1000, internal.openrouter.generateTitle, {
         chatId: currentChatId,
+        userId,
       });
     }
 

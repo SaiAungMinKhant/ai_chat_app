@@ -31,38 +31,6 @@ export const list = query({
   },
 });
 
-export const send = mutation({
-  args: {
-    chatId: v.id("chats"),
-    content: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-
-    // Verify user owns this chat
-    const chat = await ctx.db.get(args.chatId);
-    if (!chat || chat.userId !== userId) {
-      throw new Error("Chat not found or unauthorized");
-    }
-
-    await ctx.db.insert("messages", {
-      chatId: args.chatId,
-      role: "user",
-      model: "user",
-      content: args.content,
-      status: "completed",
-    });
-
-    // Schedule the AI response generation
-    await ctx.scheduler.runAfter(0, internal.gemini.chatStream, {
-      chatId: args.chatId,
-    });
-  },
-});
-
 export const sendWithOpenRouter = mutation({
   args: {
     chatId: v.id("chats"),
@@ -106,6 +74,7 @@ export const sendWithOpenRouter = mutation({
     // Schedule the OpenRouter AI response generation
     await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
       chatId: args.chatId,
+      userId,
       modelName: args.modelName,
     });
   },
@@ -119,13 +88,6 @@ export const internalList = internalQuery({
       .withIndex("by_chatId", (q) => q.eq("chatId", args.chatId))
       .order("asc")
       .collect();
-  },
-});
-
-export const internalGet = internalQuery({
-  args: { messageId: v.id("messages") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.messageId);
   },
 });
 
@@ -180,17 +142,21 @@ export const internalUpdate = internalMutation({
   },
 });
 
-export const update = mutation({
+// Checks and writes in one transaction so a stop can't be overwritten.
+export const writeStream = internalMutation({
   args: {
     messageId: v.id("messages"),
     content: v.string(),
+    done: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
-    await ctx.db.patch(args.messageId, { content: args.content });
+    const message = await ctx.db.get(args.messageId);
+    if (message?.status !== "streaming") return false;
+    await ctx.db.patch(args.messageId, {
+      content: args.content,
+      status: args.done ? "completed" : "streaming",
+    });
+    return true;
   },
 });
 
@@ -248,6 +214,7 @@ export const retryGeneration = mutation({
     // Re-trigger the AI response with the same model
     await ctx.scheduler.runAfter(0, internal.openrouter.chatStream, {
       chatId: args.chatId,
+      userId,
       modelName: lastErrorMessage.model || "openai/gpt-4.1-nano",
     });
   },
