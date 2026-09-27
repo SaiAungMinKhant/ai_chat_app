@@ -114,8 +114,8 @@ export function Chat({ chatId }: ChatProps) {
         />
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 z-20">
-        <form className="flex mx-auto px-4 py-4 md:py-6 gap-2 w-full md:max-w-3xl">
+      <div className="absolute bottom-0 left-0 right-0 z-20 pt-8 pointer-events-none bg-gradient-to-t from-background via-background to-transparent">
+        <form className="pointer-events-auto flex mx-auto px-4 pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           <ChatInput
             input={message}
             setInput={setMessage}

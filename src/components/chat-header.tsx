@@ -39,8 +39,7 @@ function PureChatHeader({
   };
 
   return (
-    // z-10 is to make sure toggle button to be able use
-    <header className="flex sticky top-0 py-1.5 justify-between items-center px-2 md:px-2 gap-2 z-10">
+    <header className="flex sticky top-0 py-1.5 justify-between items-center px-2 gap-2 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center gap-2">
         <SidebarToggle />
 
