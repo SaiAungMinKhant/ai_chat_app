@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react";
+import { MessageSquare, PlusIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import {
@@ -38,38 +38,38 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <div className="flex flex-row justify-between items-center">
-            <Link
-              to="/chat"
-              search={{ id: "" }}
-              onClick={() => {
-                setOpenMobile(false);
-              }}
-              className="flex flex-row gap-3 items-center"
-            >
-              <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                One Chat
-              </span>
-            </Link>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  className="p-2 rounded-full"
-                  onClick={() => {
-                    setOpenMobile(false);
-                    void navigate({ to: "/chat", search: { id: "" } });
-                  }}
-                >
-                  <PlusIcon />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent align="end">New Chat</TooltipContent>
-            </Tooltip>
-          </div>
-        </SidebarMenu>
+        <div className="flex flex-row justify-between items-center">
+          <Link
+            to="/chat"
+            search={{ id: "" }}
+            onClick={() => {
+              setOpenMobile(false);
+            }}
+            className="flex flex-row gap-2 items-center rounded-md px-1 py-1"
+          >
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <MessageSquare className="size-4" />
+            </span>
+            <span className="font-semibold">One Chat</span>
+          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                aria-label="New chat"
+                onClick={() => {
+                  setOpenMobile(false);
+                  void navigate({ to: "/chat", search: { id: "" } });
+                }}
+              >
+                <PlusIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent align="end">New chat</TooltipContent>
+          </Tooltip>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarHistory user={user} />

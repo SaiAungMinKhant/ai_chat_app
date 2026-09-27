@@ -49,6 +49,7 @@ function PureChatHeader({
               <Button
                 variant="ghost"
                 className="order-2 md:order-1 p-2 rounded-full"
+                aria-label="New chat"
                 onClick={handleNewChat}
               >
                 <PlusIcon />
