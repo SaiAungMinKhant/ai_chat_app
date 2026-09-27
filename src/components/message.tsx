@@ -1,129 +1,82 @@
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Id } from "../../convex/_generated/dataModel";
-import { SparklesIcon, AlertCircleIcon } from "lucide-react";
-import { cx } from "class-variance-authority";
+import { AlertCircleIcon } from "lucide-react";
+import { Doc } from "../../convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
 
-interface Message {
-  _id: Id<"messages">;
-  role: "user" | "assistant";
-  content?: string;
-  status?: "streaming" | "completed" | "error" | "stopped";
-  model?: string;
+export type ChatMessage = Doc<"messages">;
+
+type MessageStatusValue = NonNullable<ChatMessage["status"]>;
+
+const STATUS_INDICATORS: Record<
+  MessageStatusValue,
+  (message: ChatMessage) => ReactNode
+> = {
+  streaming: (message) => (message.content ? null : <TypingIndicator />),
+  completed: (message) =>
+    message.model ? (
+      <p className="text-xs text-muted-foreground">{message.model}</p>
+    ) : null,
+  error: () => (
+    <p className="flex items-center gap-1.5 text-sm text-destructive">
+      <AlertCircleIcon className="size-4" />
+      Failed to generate response
+    </p>
+  ),
+  stopped: () => (
+    <p className="text-sm text-muted-foreground">Generation stopped</p>
+  ),
+};
+
+function MessageStatus({ message }: { message: ChatMessage }) {
+  return message.status ? STATUS_INDICATORS[message.status](message) : null;
 }
 
-interface MessageProps {
-  message: Message;
-  isStreaming?: boolean;
-  hasError?: boolean;
-  isStopped?: boolean;
-  isLast?: boolean;
-}
-
-export function PreviewMessage({
-  message,
-  isStreaming,
-  hasError,
-  isStopped,
-  isLast,
-}: MessageProps) {
+export function TypingIndicator() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`flex ${
-        message.role === "user" ? "justify-end" : "justify-start"
-      } ${isLast ? "mb-6" : ""}`}
+    <div
+      role="status"
+      aria-label="Assistant is typing"
+      className="flex h-6 items-center gap-1"
     >
-      <div
-        className={`rounded-lg px-4 py-2 whitespace-pre-wrap max-w-full overflow-hidden ${
-          message.role === "user" ? "bg-primary max-w-[50%]" : ""
-        }`}
-      >
-        {message.content ? (
-          <>
-            {message.role === "user" ? (
-              <div className="">{message.content}</div>
-            ) : (
-              <MarkdownRenderer>{message.content}</MarkdownRenderer>
-            )}
-
-            {/* Status indicators for assistant messages */}
-            {message.role === "assistant" && (
-              <div className="mt-2 flex items-center gap-2">
-                {isStreaming && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
-                    <span>Generating...</span>
-                  </div>
-                )}
-
-                {hasError && (
-                  <div className="flex items-center gap-1 text-xs text-red-500">
-                    <AlertCircleIcon size={12} />
-                    <span>Failed to generate response</span>
-                  </div>
-                )}
-
-                {isStopped && (
-                  <div className="flex items-center gap-1 text-xs text-orange-500">
-                    <AlertCircleIcon size={12} />
-                    <span>Generation stopped</span>
-                  </div>
-                )}
-
-                {message.status === "completed" && message.model && (
-                  <div className="text-xs text-muted-foreground">
-                    {message.model}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <span className="text-muted-foreground italic">
-            {message.role === "assistant" && isStreaming && "Thinking..."}
-            {message.role === "assistant" &&
-              hasError &&
-              "Error generating response"}
-            {message.role === "assistant" && isStopped && "Generation stopped"}
-          </span>
-        )}
-      </div>
-    </motion.div>
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="size-1.5 rounded-full bg-muted-foreground"
+          animate={{ opacity: [0.25, 1, 0.25] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+        />
+      ))}
+    </div>
   );
 }
 
-export function ThinkingMessage() {
+export function PreviewMessage({ message }: { message: ChatMessage }) {
+  const isUser = message.role === "user";
+
   return (
     <motion.div
-      data-testid="message-assistant-loading"
-      className="w-full mx-auto max-w-3xl px-4 group/message min-h-96"
-      initial={{ y: 5, opacity: 0 }}
-      animate={{ y: 0, opacity: 1, transition: { delay: 0.5 } }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className={cn(
+        "flex w-full min-w-0",
+        isUser ? "justify-end" : "flex-col gap-2",
+      )}
     >
-      <div
-        className={cx(
-          "flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
-          {
-            "group-data-[role=user]/message:bg-muted": true,
-          },
-        )}
-      >
-        <div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-          <SparklesIcon size={14} />
+      {isUser ? (
+        <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 max-w-[85%] md:max-w-[75%] whitespace-pre-wrap break-words">
+          {message.content}
         </div>
-
-        <div className="flex flex-col gap-2 w-full">
-          <div className="flex flex-col gap-4 text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              <span>Generating response...</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      ) : (
+        <>
+          {message.content && (
+            <MarkdownRenderer>{message.content}</MarkdownRenderer>
+          )}
+          <MessageStatus message={message} />
+        </>
+      )}
     </motion.div>
   );
 }
