@@ -81,17 +81,55 @@ export function PreviewMessage({ message }: { message: ChatMessage }) {
   );
 }
 
-export function Greeting() {
+const SUGGESTIONS = [
+  {
+    title: "Explain a concept",
+    prompt: "Explain how neural networks learn, in simple terms.",
+  },
+  {
+    title: "Write some code",
+    prompt: "Write a TypeScript function that debounces another function.",
+  },
+  {
+    title: "Summarize text",
+    prompt: "Summarize the following text in three bullet points:\n\n",
+  },
+  {
+    title: "Brainstorm ideas",
+    prompt: "Brainstorm ten names for a study-planner app.",
+  },
+] as const;
+
+export function Greeting({
+  onSuggestionClick,
+}: {
+  onSuggestionClick: (prompt: string) => void;
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center h-full text-center space-y-4"
+      transition={{ duration: 0.3 }}
+      className="flex flex-1 flex-col items-center justify-center gap-8 w-full max-w-2xl mx-auto px-4"
     >
-      <h2 className="text-2xl font-semibold text-muted-foreground">
-        Start a conversation
-      </h2>
-      <p className="text-muted-foreground">Send a message to begin chatting</p>
+      <h1 className="text-2xl md:text-3xl font-semibold text-foreground text-center">
+        How can I help you today?
+      </h1>
+      <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
+        {SUGGESTIONS.map((suggestion) => (
+          <button
+            key={suggestion.title}
+            type="button"
+            onClick={() => onSuggestionClick(suggestion.prompt)}
+            className="rounded-xl border bg-card hover:bg-accent text-left px-4 py-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <div className="text-sm font-medium">{suggestion.title}</div>
+            <div className="text-sm text-muted-foreground truncate">
+              {suggestion.prompt}
+            </div>
+          </button>
+        ))}
+      </div>
     </motion.div>
   );
 }

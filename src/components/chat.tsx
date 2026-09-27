@@ -35,11 +35,9 @@ export function Chat({ chatId }: ChatProps) {
     checkScrollPosition,
   } = useScrollToBottom();
 
-  // Track previous messages to detect new ones
   const prevMessagesLength = useRef(messages?.length || 0);
   const prevLastMessage = useRef<string | null>(null);
 
-  // Handle new messages with scrolling (only when user message)
   useEffect(() => {
     if (!messages?.length) return;
 
@@ -49,16 +47,7 @@ export function Chat({ chatId }: ChatProps) {
     const isNewLastMessage = lastMessage?._id !== prevLastMessage.current;
 
     if (isNewMessage && isNewLastMessage) {
-      const isUserMessage = lastMessage?.role === "user";
-
-      console.log("New message detected:", {
-        role: lastMessage?.role,
-        isUserMessage,
-        currentScrollTop: scrollTop,
-        willAutoScroll: isUserMessage,
-      });
-
-      if (isUserMessage) {
+      if (lastMessage?.role === "user") {
         scrollToNewMessage();
       } else {
         setTimeout(() => {
@@ -69,7 +58,7 @@ export function Chat({ chatId }: ChatProps) {
 
     prevMessagesLength.current = currentLength;
     prevLastMessage.current = lastMessage?._id || null;
-  }, [messages, scrollToNewMessage, checkScrollPosition, scrollTop]);
+  }, [messages, scrollToNewMessage, checkScrollPosition]);
 
   useEffect(() => {
     if (messages?.length) {
@@ -107,11 +96,6 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
-  const handleModelChange = (model: string) => {
-    console.log("Model changed from", selectedModel, "to", model);
-    setSelectedModel(model);
-  };
-
   return (
     <div className="flex flex-col h-screen bg-background relative">
       <ChatMessages
@@ -119,6 +103,7 @@ export function Chat({ chatId }: ChatProps) {
         messages={messages}
         containerRef={containerRef}
         endRef={endRef}
+        onSuggestionClick={setMessage}
       />
 
       <div className="absolute top-0 left-0 right-0 z-20">
@@ -141,7 +126,7 @@ export function Chat({ chatId }: ChatProps) {
             scrollToTop={scrollToTop}
             scrollTop={scrollTop}
             selectedModel={selectedModel}
-            onModelChange={handleModelChange}
+            onModelChange={setSelectedModel}
           />
         </form>
       </div>

@@ -12,15 +12,19 @@ interface ChatMessagesProps {
   messages?: ChatMessage[];
   containerRef: RefObject<HTMLDivElement | null>;
   endRef: RefObject<HTMLDivElement | null>;
+  onSuggestionClick: (prompt: string) => void;
 }
 
 function PureChatMessages({
+  chatId,
   messages,
   containerRef,
   endRef,
+  onSuggestionClick,
 }: ChatMessagesProps) {
   const reversedMessages = messages ? [...messages].reverse() : [];
   const isWaitingForReply = messages?.[messages.length - 1]?.role === "user";
+  const isEmptyChat = chatId ? messages?.length === 0 : true;
 
   return (
     <div
@@ -37,7 +41,7 @@ function PureChatMessages({
         ))}
       </div>
 
-      {(!messages || messages.length === 0) && <Greeting />}
+      {isEmptyChat && <Greeting onSuggestionClick={onSuggestionClick} />}
     </div>
   );
 }
@@ -46,5 +50,6 @@ export const ChatMessages = memo(PureChatMessages, (prevProps, nextProps) => {
   if (prevProps.messages?.length !== nextProps.messages?.length) return false;
   if (!equal(prevProps.messages, nextProps.messages)) return false;
   if (prevProps.chatId !== nextProps.chatId) return false;
+  if (prevProps.onSuggestionClick !== nextProps.onSuggestionClick) return false;
   return true;
 });
