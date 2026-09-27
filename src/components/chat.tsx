@@ -28,7 +28,6 @@ export function Chat({ chatId }: ChatProps) {
   const {
     containerRef,
     endRef,
-    scrollTop,
     canScrollUp,
     scrollToTop,
     scrollToNewMessage,
@@ -124,7 +123,6 @@ export function Chat({ chatId }: ChatProps) {
             chatMessages={messages}
             canScrollUp={canScrollUp}
             scrollToTop={scrollToTop}
-            scrollTop={scrollTop}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
           />

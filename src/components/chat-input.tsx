@@ -1,6 +1,6 @@
-import { memo, useRef, useCallback, useState } from "react"; // useState is needed now for dialog
+import { memo, useRef, useCallback, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Square, LayoutTemplate } from "lucide-react"; // Import LayoutTemplate icon
+import { ArrowUp, ArrowDown, Square, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
 import { useNavigate } from "@tanstack/react-router";
@@ -9,9 +9,6 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-// import { PreviewAttachment } from "./preview-attachment";
-
 import {
   Select,
   SelectContent,
@@ -19,31 +16,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import {
-  Dialog, // Import Dialog components
+  Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-import { TemplateSelector } from "./template-selector"; // Import your TemplateSelector component
-// Make sure the path is correct based on where template-selector.tsx is relative to ChatInput.tsx
-// e.g., if template-selector is in components/templates/, then "../../components/templates/template-selector"
-// Or, if it's in the same directory: "./template-selector"
+import { TemplateSelector } from "./template-selector";
+import type { ChatMessage } from "./message";
 
-// interface Attachment {
-//   url: string;
-//   name: string;
-//   contentType: string;
-// }
-
-interface Message {
-  _id: Id<"messages">;
-  role: "user" | "assistant";
-  content?: string;
-  status?: "streaming" | "completed" | "error" | "stopped";
-  model?: string;
-}
+const MODELS = [
+  { id: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano" },
+  { id: "google/gemini-2.0-flash-001", label: "Gemini 2.0 Flash" },
+  { id: "deepseek/deepseek-chat-v3-0324:free", label: "DeepSeek v3" },
+  { id: "anthropic/claude-3-haiku", label: "Claude 3 Haiku" },
+] as const;
 
 interface ChatInputProps {
   chatId?: string;
@@ -51,13 +45,9 @@ interface ChatInputProps {
   setInput: (input: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading?: boolean;
-  onStop?: () => void;
-  className?: string;
-  showSuggestions?: boolean;
-  chatMessages?: Message[];
+  chatMessages?: ChatMessage[];
   canScrollUp: boolean;
   scrollToTop: () => void;
-  scrollTop: number;
   selectedModel?: string;
   onModelChange?: (model: string) => void;
 }
@@ -67,7 +57,6 @@ function PureChatInput({
   setInput,
   onSubmit,
   isLoading = false,
-  className,
   chatMessages,
   chatId,
   canScrollUp,
@@ -76,64 +65,33 @@ function PureChatInput({
   onModelChange,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // const fileInputRef = useRef<HTMLInputElement>(null);
   const { width } = useWindowSize();
   const navigate = useNavigate();
   const user = useQuery(api.auth.isAuthenticated);
   const stopGeneration = useMutation(api.messages.stopGeneration);
-
-  // const [attachments, setAttachments] = useState<Attachment[]>([]);
-  // const [uploadQueue, setUploadQueue] = useState<string[]>([]);
-
-  // State to manage the TemplateSelector dialog
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
-  // Check if there's a streaming message
   const isStreaming = chatMessages?.some(
     (msg) => msg.role === "assistant" && msg.status === "streaming",
   );
 
-  const handleScrollToTop = (e: React.MouseEvent) => {
-    e.preventDefault();
-    scrollToTop();
-  };
+  // Input also changes from outside the textarea (templates, suggestions,
+  // clearing after submit), so size it from the value rather than onChange.
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [input]);
 
-  // Auto-resize textarea
-  const adjustHeight = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
-    }
-  }, []);
-
-  const resetHeight = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = "98px";
-    }
-  }, []);
-
-  // Handle input changes
-  const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = event.target.value;
-    setInput(newValue);
-    adjustHeight();
-  };
-
-  // File upload functionality
-  // const uploadFile = async (file: File): Promise<Attachment | undefined> => { /* ... */ };
-  // const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ }, []);
-
-  // Callback to handle selection from TemplateSelector
   const handleTemplateSelect = useCallback(
     (content: string) => {
       setInput(content);
       setIsTemplateDialogOpen(false);
     },
-    [setInput /*, adjustHeight*/],
+    [setInput],
   );
 
-  // Submit form
   const submitForm = useCallback(
     async (e?: React.FormEvent | React.MouseEvent) => {
       e?.preventDefault();
@@ -144,39 +102,30 @@ function PureChatInput({
         return;
       }
 
-      const formEvent = e as React.FormEvent;
-      onSubmit(formEvent);
-
-      // Reset form
-      // setAttachments([]); // If attachments are used, uncomment
-      resetHeight();
+      onSubmit(e as React.FormEvent);
 
       if (width && width > 768) {
         textareaRef.current?.focus();
       }
     },
-    [input, isLoading, onSubmit, resetHeight, width, user, navigate],
+    [input, isLoading, onSubmit, width, user, navigate],
   );
 
   const handleStopGeneration = () => {
     if (!chatId) return;
 
-    void stopGeneration({ chatId: chatId as Id<"chats"> })
-      .then((result) => {
-        if (result.success) {
-          // Successfully stopped generation
-        }
-      })
-      .catch((error) => {
+    void stopGeneration({ chatId: chatId as Id<"chats"> }).catch(
+      (error: Error) => {
         console.error("Failed to stop generation:", error);
         if (!error.message?.includes("No streaming message found")) {
           toast.error("Failed to stop generation");
         }
-      });
+      },
+    );
   };
 
   return (
-    <div className="relative w-full flex flex-col gap-4">
+    <div className="relative w-full">
       <AnimatePresence>
         {canScrollUp && chatMessages && chatMessages.length > 0 && (
           <motion.div
@@ -184,71 +133,33 @@ function PureChatInput({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className="absolute left-1/2 bottom-28 -translate-x-1/2 z-50"
+            className="absolute -top-12 left-1/2 -translate-x-1/2 z-10"
           >
             <Button
-              className="rounded-full bg-background border shadow-lg hover:bg-accent"
+              className="rounded-full bg-background shadow-lg hover:bg-accent"
               size="icon"
               variant="outline"
-              onClick={handleScrollToTop}
+              aria-label="Scroll to latest message"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToTop();
+              }}
               type="button"
             >
-              <ArrowDown size={16} />
+              <ArrowDown />
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Suggested actions */}
-      {/* {showSuggestions && (
-        <SuggestedActions
-          onSuggestionClick={(suggestion) => setInput(suggestion)}
-          chatId={chatId}
-        />
-      )} */}
-
-      {/* File input (commented out) */}
-      {/* <input
-        type="file"
-        className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
-        ref={fileInputRef}
-        multiple
-        onChange={(e) => void handleFileChange(e)}
-        tabIndex={-1}
-      /> */}
-
-      {/* Attachments preview (commented out) */}
-      {/* {(attachments.length > 0 || uploadQueue.length > 0) && (
-        <div className="flex flex-row gap-2 overflow-x-scroll items-end">
-          {attachments.map((attachment) => (
-            <PreviewAttachment
-              key={attachment.url}
-              attachment={attachment}
-              onRemove={() =>
-                setAttachments((prev) =>
-                  prev.filter((a) => a.url !== attachment.url),
-                )
-              }
-            />
-          ))}
-          {uploadQueue.map((filename) => (
-            <PreviewAttachment
-              key={filename}
-              attachment={{ url: "", name: filename, contentType: "" }}
-              isUploading={true}
-            />
-          ))}
-        </div>
-      )} */}
-
-      {/* Main input form */}
-      <div className="relative">
-        <Textarea
+      <div className="rounded-3xl border bg-card shadow-sm transition focus-within:ring-2 focus-within:ring-ring/30">
+        <textarea
           ref={textareaRef}
+          aria-label="Message"
           placeholder={chatId ? "Type your message..." : "Start a new chat..."}
           value={input}
-          onChange={handleInput}
-          className={`min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-3xl !text-base border pb-10 pr-20 ${className || ""}`}
+          onChange={(e) => setInput(e.target.value)}
+          className="block w-full min-h-[64px] max-h-[40dvh] overflow-y-auto resize-none bg-transparent px-4 pt-4 pb-2 text-base outline-none placeholder:text-muted-foreground"
           rows={2}
           autoFocus
           onKeyDown={(e) => {
@@ -267,103 +178,100 @@ function PureChatInput({
           }}
         />
 
-        {/* Left side buttons - Model selector, Templates, and Attachment */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-1">
-          {/* Model Selector */}
-          {onModelChange && (
-            <Select
-              value={selectedModel}
-              onValueChange={onModelChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="px-2 py-1 h-8 text-xs rounded-full min-w-[125px]">
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent className="rounded-lg">
-                <SelectItem value="openai/gpt-4.1-nano">
-                  GPT-4.1 Nano
-                </SelectItem>
-                <SelectItem value="google/gemini-2.0-flash-001">
-                  Gemini 2.0 Flash
-                </SelectItem>
-                <SelectItem value="deepseek/deepseek-chat-v3-0324:free">
-                  DeepSeek v3
-                </SelectItem>
-                <SelectItem value="anthropic/claude-3-haiku">
-                  Claude 3 Haiku
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Template Selector Button */}
-          <Dialog
-            open={isTemplateDialogOpen}
-            onOpenChange={setIsTemplateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-full"
+        <div className="flex items-center justify-between gap-2 px-2 pb-2">
+          <div className="flex items-center gap-1">
+            {onModelChange && (
+              <Select
+                value={selectedModel}
+                onValueChange={onModelChange}
                 disabled={isLoading}
               >
-                <LayoutTemplate size={16} /> {/* Use the template icon */}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-6">
-              {" "}
-              {/* Adjust size for content */}
-              <h2 className="text-xl font-bold mb-4">
-                Select or Manage Templates
-              </h2>
-              <div className="flex-grow overflow-y-auto">
-                {" "}
-                {/* Enable scrolling for template content */}
-                <TemplateSelector
-                  onTemplateSelect={handleTemplateSelect}
-                  className="h-full"
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+                <SelectTrigger
+                  size="sm"
+                  aria-label="Model"
+                  className="h-8 rounded-full border-0 bg-transparent dark:bg-transparent hover:bg-accent dark:hover:bg-accent text-xs gap-1 px-3 shadow-none"
+                >
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  {MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          {/* Attachment button (still commented out) */}
-          {/* <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-full"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-          >
-            <Paperclip size={16} />
-          </Button> */}
-        </div>
+            <Dialog
+              open={isTemplateDialogOpen}
+              onOpenChange={setIsTemplateDialogOpen}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 rounded-full text-muted-foreground"
+                      aria-label="Templates"
+                      disabled={isLoading}
+                    >
+                      <LayoutTemplate />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Templates</TooltipContent>
+              </Tooltip>
+              <DialogContent
+                aria-describedby={undefined}
+                className="sm:max-w-4xl h-[80vh] flex flex-col"
+              >
+                <DialogHeader>
+                  <DialogTitle>Select or manage templates</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow overflow-y-auto">
+                  <TemplateSelector
+                    onTemplateSelect={handleTemplateSelect}
+                    className="h-full"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        {/* Submit/Stop button */}
-        <div className="absolute bottom-2 right-2">
           {isStreaming ? (
-            <Button
-              type="button"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full"
-              onClick={handleStopGeneration}
-              variant="destructive"
-            >
-              <Square size={14} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  className="size-8 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                  aria-label="Stop generating"
+                  onClick={handleStopGeneration}
+                >
+                  <Square className="size-3 fill-current" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Stop generating</TooltipContent>
+            </Tooltip>
           ) : (
-            <Button
-              type="button"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full"
-              disabled={!input.trim()} // Still relying on this as attachments are off
-              onClick={(e) => void submitForm(e)}
-            >
-              <ArrowUp size={14} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  className="size-8 rounded-full"
+                  aria-label="Send message"
+                  disabled={!input.trim()}
+                  onClick={(e) => void submitForm(e)}
+                >
+                  <ArrowUp />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send message</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -376,19 +284,14 @@ export const ChatInput = memo(PureChatInput, (prevProps, nextProps) => {
   if (prevProps.isLoading !== nextProps.isLoading) return false;
   if (prevProps.chatId !== nextProps.chatId) return false;
   if (prevProps.canScrollUp !== nextProps.canScrollUp) return false;
-  if (prevProps.scrollTop !== nextProps.scrollTop) return false;
   if (prevProps.chatMessages?.length !== nextProps.chatMessages?.length)
     return false;
   if (prevProps.selectedModel !== nextProps.selectedModel) return false;
 
-  // Check if any message status has changed (important for streaming/stopped states)
   if (prevProps.chatMessages && nextProps.chatMessages) {
     for (let i = 0; i < prevProps.chatMessages.length; i++) {
-      const prevMsg = prevProps.chatMessages[i];
-      const nextMsg = nextProps.chatMessages[i];
-      if (prevMsg.status !== nextMsg.status) {
+      if (prevProps.chatMessages[i].status !== nextProps.chatMessages[i].status)
         return false;
-      }
     }
   }
 
