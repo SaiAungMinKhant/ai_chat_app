@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -15,6 +15,7 @@ interface ChatProps {
 export function Chat({ chatId }: ChatProps) {
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4.1-nano");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
 
   const createChat = useMutation(api.chats.sendMessage);
@@ -95,6 +96,11 @@ export function Chat({ chatId }: ChatProps) {
     }
   };
 
+  const handleSuggestionClick = useCallback((prompt: string) => {
+    setMessage(prompt);
+    textareaRef.current?.focus();
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-background relative">
       <ChatMessages
@@ -102,7 +108,7 @@ export function Chat({ chatId }: ChatProps) {
         messages={messages}
         containerRef={containerRef}
         endRef={endRef}
-        onSuggestionClick={setMessage}
+        onSuggestionClick={handleSuggestionClick}
       />
 
       <div className="absolute top-0 left-0 right-0 z-20">
@@ -116,6 +122,7 @@ export function Chat({ chatId }: ChatProps) {
       <div className="absolute bottom-0 left-0 right-0 z-20 pt-8 pointer-events-none bg-gradient-to-t from-background via-background to-transparent">
         <form className="pointer-events-auto flex mx-auto px-4 pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           <ChatInput
+            textareaRef={textareaRef}
             input={message}
             setInput={setMessage}
             onSubmit={(e) => void handleSubmit(e)}

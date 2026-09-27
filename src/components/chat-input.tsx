@@ -1,4 +1,10 @@
-import { memo, useRef, useCallback, useLayoutEffect, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useState,
+  type RefObject,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, ArrowDown, Square, LayoutTemplate } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +46,7 @@ const MODELS = [
 ] as const;
 
 interface ChatInputProps {
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
   chatId?: string;
   input: string;
   setInput: (input: string) => void;
@@ -53,6 +60,7 @@ interface ChatInputProps {
 }
 
 function PureChatInput({
+  textareaRef,
   input,
   setInput,
   onSubmit,
@@ -64,7 +72,6 @@ function PureChatInput({
   selectedModel = "openai/gpt-4.1-nano",
   onModelChange,
 }: ChatInputProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
   const navigate = useNavigate();
   const user = useQuery(api.auth.isAuthenticated);
@@ -82,7 +89,7 @@ function PureChatInput({
     if (!textarea) return;
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [input]);
+  }, [input, textareaRef]);
 
   const handleTemplateSelect = useCallback(
     (content: string) => {
@@ -108,7 +115,7 @@ function PureChatInput({
         textareaRef.current?.focus();
       }
     },
-    [input, isLoading, onSubmit, width, user, navigate],
+    [input, isLoading, onSubmit, width, user, navigate, textareaRef],
   );
 
   const handleStopGeneration = () => {
@@ -136,7 +143,7 @@ function PureChatInput({
             className="absolute -top-12 left-1/2 -translate-x-1/2 z-10"
           >
             <Button
-              className="rounded-full bg-background shadow-lg hover:bg-accent"
+              className="rounded-full bg-background dark:bg-muted shadow-lg hover:bg-accent"
               size="icon"
               variant="outline"
               aria-label="Scroll to latest message"

@@ -164,7 +164,7 @@ const markdownComponents: { [key: string]: React.ElementType } = {
 
   a: ({ node: _node, children, ...props }: ComponentProps) => (
     <a
-      className="text-primary underline underline-offset-4"
+      className="text-link underline underline-offset-4"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
