@@ -123,7 +123,7 @@ export function Chat({ chatId }: ChatProps) {
 
       <div className="absolute top-0 left-0 right-0 z-20">
         <ChatHeader
-          chatId={chatId as string}
+          chatId={chatId}
           selectedVisibilityType="private"
           user={null}
         />
