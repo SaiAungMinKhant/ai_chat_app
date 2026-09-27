@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
+import "@fontsource-variable/inter";
 import "./index.css";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 
