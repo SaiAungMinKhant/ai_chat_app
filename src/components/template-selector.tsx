@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Button } from "./ui/button";
@@ -59,9 +59,6 @@ export function TemplateSelector({
   const createTemplate = useMutation(api.templates.createTemplate);
   const updateTemplate = useMutation(api.templates.updateTemplate);
   const deleteTemplate = useMutation(api.templates.deleteTemplate);
-  const createDefaultTemplates = useMutation(
-    api.templates.createDefaultTemplates,
-  );
 
   const [newTemplate, setNewTemplate] = useState({
     name: "",
@@ -69,13 +66,6 @@ export function TemplateSelector({
     content: "",
     category: "custom" as const,
   });
-
-  // Create default templates if user has none
-  useEffect(() => {
-    if (templates && templates.length === 0) {
-      void createDefaultTemplates().catch(console.error);
-    }
-  }, [templates, createDefaultTemplates]);
 
   const categories = [
     { value: "all", label: "All Templates", icon: BookOpen },

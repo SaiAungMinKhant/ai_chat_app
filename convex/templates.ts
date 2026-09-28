@@ -1,8 +1,8 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-// Get all templates for the current user
 export const getUserTemplates = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -18,7 +18,6 @@ export const getUserTemplates = query({
   },
 });
 
-// Get templates by category
 export const getTemplatesByCategory = query({
   args: {
     category: v.union(
@@ -43,7 +42,6 @@ export const getTemplatesByCategory = query({
   },
 });
 
-// Create a new template
 export const createTemplate = mutation({
   args: {
     name: v.string(),
@@ -75,7 +73,6 @@ export const createTemplate = mutation({
   },
 });
 
-// Update an existing template
 export const updateTemplate = mutation({
   args: {
     templateId: v.id("templates"),
@@ -102,17 +99,11 @@ export const updateTemplate = mutation({
       throw new Error("Template not found or unauthorized");
     }
 
-    const updates: any = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.content !== undefined) updates.content = args.content;
-    if (args.category !== undefined) updates.category = args.category;
-
-    await ctx.db.patch(args.templateId, updates);
+    const { templateId, ...updates } = args;
+    await ctx.db.patch(templateId, updates);
   },
 });
 
-// Delete a template
 export const deleteTemplate = mutation({
   args: {
     templateId: v.id("templates"),
@@ -132,44 +123,35 @@ export const deleteTemplate = mutation({
   },
 });
 
-// Create default templates for new users
-export const createDefaultTemplates = mutation({
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("User not authenticated");
-    }
-
-    const defaultTemplates = [
-      {
-        name: "Summarize",
-        description: "Get a concise summary of the content",
-        content:
-          "Please provide a clear and concise summary of the following content, highlighting the key points and main ideas:",
-        category: "summary" as const,
-      },
-      {
-        name: "Compare and Contrast",
-        description: "Compare two or more items or concepts",
-        content:
-          "Please compare and contrast the following items/concepts, highlighting their similarities and differences:",
-        category: "compare" as const,
-      },
-      {
-        name: "Research Analysis",
-        description: "Conduct thorough research and analysis",
-        content:
-          "Please conduct a thorough research analysis on the following topic, providing detailed insights and supporting evidence:",
-        category: "research" as const,
-      },
-    ];
-
-    for (const template of defaultTemplates) {
-      await ctx.db.insert("templates", {
-        userId,
-        ...template,
-        isDefault: true,
-      });
-    }
+const DEFAULT_TEMPLATES = [
+  {
+    name: "Summarize",
+    description: "Get a concise summary of the content",
+    content:
+      "Please provide a clear and concise summary of the following content, highlighting the key points and main ideas:",
+    category: "summary",
   },
-});
+  {
+    name: "Compare and Contrast",
+    description: "Compare two or more items or concepts",
+    content:
+      "Please compare and contrast the following items/concepts, highlighting their similarities and differences:",
+    category: "compare",
+  },
+  {
+    name: "Research Analysis",
+    description: "Conduct thorough research and analysis",
+    content:
+      "Please conduct a thorough research analysis on the following topic, providing detailed insights and supporting evidence:",
+    category: "research",
+  },
+] as const;
+
+export async function insertDefaultTemplates(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+) {
+  for (const template of DEFAULT_TEMPLATES) {
+    await ctx.db.insert("templates", { userId, ...template, isDefault: true });
+  }
+}
