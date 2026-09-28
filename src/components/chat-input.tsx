@@ -1,12 +1,6 @@
-import {
-  memo,
-  useCallback,
-  useLayoutEffect,
-  useState,
-  type RefObject,
-} from "react";
+import { memo, useCallback, useLayoutEffect, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowDown, Square, LayoutTemplate } from "lucide-react";
+import { ArrowUp, ArrowDown, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
 import { useNavigate } from "@tanstack/react-router";
@@ -23,19 +17,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { TemplateSelector } from "./template-selector";
+import { TemplateDialog } from "./template-selector";
 import type { ChatMessage } from "./message";
 
 const MODELS = [
@@ -76,7 +63,6 @@ function PureChatInput({
   const navigate = useNavigate();
   const user = useQuery(api.auth.isAuthenticated);
   const stopGeneration = useMutation(api.messages.stopGeneration);
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
   const isStreaming = chatMessages?.some(
     (msg) => msg.role === "assistant" && msg.status === "streaming",
@@ -93,10 +79,16 @@ function PureChatInput({
 
   const handleTemplateSelect = useCallback(
     (content: string) => {
-      setInput(content);
-      setIsTemplateDialogOpen(false);
+      const next = input.trim() ? `${content}\n\n${input}` : content;
+      setInput(next);
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.focus();
+        textarea.setSelectionRange(next.length, next.length);
+      });
     },
-    [setInput],
+    [input, setInput, textareaRef],
   );
 
   const submitForm = useCallback(
@@ -210,42 +202,10 @@ function PureChatInput({
               </Select>
             )}
 
-            <Dialog
-              open={isTemplateDialogOpen}
-              onOpenChange={setIsTemplateDialogOpen}
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 rounded-full text-muted-foreground"
-                      aria-label="Templates"
-                      disabled={isLoading}
-                    >
-                      <LayoutTemplate />
-                    </Button>
-                  </DialogTrigger>
-                </TooltipTrigger>
-                <TooltipContent>Templates</TooltipContent>
-              </Tooltip>
-              <DialogContent
-                aria-describedby={undefined}
-                className="sm:max-w-4xl h-[80vh] flex flex-col"
-              >
-                <DialogHeader>
-                  <DialogTitle>Select or manage templates</DialogTitle>
-                </DialogHeader>
-                <div className="flex-grow overflow-y-auto">
-                  <TemplateSelector
-                    onTemplateSelect={handleTemplateSelect}
-                    className="h-full"
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
+            <TemplateDialog
+              onSelect={handleTemplateSelect}
+              disabled={isLoading}
+            />
           </div>
 
           {isStreaming ? (
