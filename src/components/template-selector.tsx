@@ -162,7 +162,7 @@ function TemplatePanel({ onSelect }: { onSelect: (content: string) => void }) {
 
   return (
     <>
-      <DialogHeader className="flex-row items-center gap-2 pr-8">
+      <DialogHeader className="flex-row items-center gap-2 pr-8 text-left">
         {view.kind !== "list" && (
           <Button
             variant="ghost"
@@ -268,7 +268,7 @@ function TemplateList({
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-2 overflow-x-auto pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_85%,transparent)] sm:[mask-image:none]">
         {chips.map((chip) => (
           <button
             key={chip.value}
