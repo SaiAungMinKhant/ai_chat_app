@@ -86,19 +86,32 @@ export const chatStream = internalAction({
       }
 
       if (!stopped) {
-        await ctx.runMutation(internal.messages.writeStream, {
+        const completed = await ctx.runMutation(internal.messages.writeStream, {
           messageId: assistantMessageId,
           content,
           done: true,
         });
-      }
-
-      // Only generate title after the first AI response (2 messages total)
-      if (messages.length === 2) {
-        await ctx.runAction(internal.openrouter.generateTitle, {
-          chatId: args.chatId,
-          userId: args.userId,
-        });
+        if (completed && content.trim()) {
+          try {
+            const needsTitle = await ctx.runQuery(internal.chats.needsTitle, {
+              chatId: args.chatId,
+              userId: args.userId,
+            });
+            if (needsTitle) {
+              await ctx.scheduler.runAfter(
+                0,
+                internal.openrouter.generateTitle,
+                {
+                  chatId: args.chatId,
+                  userId: args.userId,
+                  modelName: args.modelName,
+                },
+              );
+            }
+          } catch (error) {
+            console.error("Could not schedule chat title:", error);
+          }
+        }
       }
     } catch (error) {
       console.error("Error in OpenRouter chat stream:", error);
@@ -113,8 +126,14 @@ export const chatStream = internalAction({
 });
 
 export const generateTitle = internalAction({
-  args: { chatId: v.id("chats"), userId: v.id("users") },
+  args: { chatId: v.id("chats"), userId: v.id("users"), modelName: v.string() },
   handler: async (ctx, args) => {
+    const needsTitle = await ctx.runQuery(internal.chats.needsTitle, {
+      chatId: args.chatId,
+      userId: args.userId,
+    });
+    if (!needsTitle) return;
+
     const messages = await ctx.runQuery(internal.messages.internalList, {
       chatId: args.chatId,
     });
@@ -124,21 +143,39 @@ export const generateTitle = internalAction({
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join("\n\n");
 
-    const openrouter = await openRouterFor(ctx, args.userId);
-
-    const { text: title } = await generateText({
-      model: openrouter("google/gemini-2.0-flash-001"),
-      prompt: `Based on the following conversation, create a short, concise title (5 words or less). Do not use quotation marks or any other formatting.
+    let title = "";
+    try {
+      const openrouter = await openRouterFor(ctx, args.userId);
+      const result = await generateText({
+        model: openrouter(args.modelName),
+        prompt: `Based on the following conversation, create a short, concise title (5 words or less). Do not use quotation marks or any other formatting.
 
       Conversation:
       ${conversationForTitle}
 
       Title:`,
-    });
+      });
+      title = result.text
+        .trim()
+        .replace(/^['"`]+|['"`]+$/g, "")
+        .slice(0, 100);
+    } catch (error) {
+      console.error("Could not generate chat title:", error);
+    }
+
+    if (!title) {
+      title =
+        messages
+          .find((message) => message.role === "user")
+          ?.content.trim()
+          .replace(/\s+/g, " ")
+          .slice(0, 60) || "Untitled Chat";
+    }
 
     await ctx.runMutation(internal.chats.updateTitle, {
       chatId: args.chatId,
-      title: title.trim(),
+      userId: args.userId,
+      title,
     });
   },
 });

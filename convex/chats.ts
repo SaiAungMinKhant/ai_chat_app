@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -42,14 +47,6 @@ export const sendMessage = mutation({
       modelName: model,
     });
 
-    // Generate title after AI responds (only for new chats)
-    if (!args.chatId) {
-      await ctx.scheduler.runAfter(1000, internal.openrouter.generateTitle, {
-        chatId: currentChatId,
-        userId,
-      });
-    }
-
     return currentChatId;
   },
 });
@@ -86,9 +83,45 @@ export const getPublic = query({
 });
 
 export const updateTitle = internalMutation({
+  args: { chatId: v.id("chats"), userId: v.id("users"), title: v.string() },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+    if (
+      chat?.userId === args.userId &&
+      (!chat.title || chat.title === "New Chat")
+    ) {
+      await ctx.db.patch(args.chatId, { title: args.title });
+    }
+  },
+});
+
+export const needsTitle = internalQuery({
+  args: { chatId: v.id("chats"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const chat = await ctx.db.get(args.chatId);
+    return (
+      chat?.userId === args.userId && (!chat.title || chat.title === "New Chat")
+    );
+  },
+});
+
+export const rename = mutation({
   args: { chatId: v.id("chats"), title: v.string() },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.chatId, { title: args.title });
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
+      throw new Error("Chat not found or unauthorized");
+    }
+
+    const title = args.title.trim();
+    if (!title || title.length > 100) {
+      throw new Error("Title must be between 1 and 100 characters");
+    }
+
+    await ctx.db.patch(args.chatId, { title });
   },
 });
 

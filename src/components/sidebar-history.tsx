@@ -15,6 +15,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -88,10 +98,36 @@ export function SidebarHistory({ user }: { user: User | null }) {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [renameChat, setRenameChat] = useState<Chat | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Query chats from Convex
   const chatHistory = useQuery(api.chats.list, user ? { limit: 20 } : "skip");
   const deleteChat = useMutation(api.chats.deleteChat);
+  const rename = useMutation(api.chats.rename);
+
+  const startRename = (chat: Chat) => {
+    setRenameChat(chat);
+    setRenameTitle(chat.title || "");
+  };
+
+  const handleRename = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!renameChat || !renameTitle.trim() || isRenaming) return;
+
+    setIsRenaming(true);
+    try {
+      await rename({ chatId: renameChat._id, title: renameTitle });
+      setRenameChat(null);
+      toast("Chat renamed");
+    } catch (error) {
+      toast.error("Failed to rename chat");
+      console.error("Failed to rename chat:", error);
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -190,6 +226,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
                         setDeleteId(chatId);
                         setShowDeleteDialog(true);
                       }}
+                      onRename={startRename}
                       setOpenMobile={setOpenMobile}
                     />
                   ))}
@@ -210,6 +247,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
                         setDeleteId(chatId);
                         setShowDeleteDialog(true);
                       }}
+                      onRename={startRename}
                       setOpenMobile={setOpenMobile}
                     />
                   ))}
@@ -230,6 +268,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
                         setDeleteId(chatId);
                         setShowDeleteDialog(true);
                       }}
+                      onRename={startRename}
                       setOpenMobile={setOpenMobile}
                     />
                   ))}
@@ -250,6 +289,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
                         setDeleteId(chatId);
                         setShowDeleteDialog(true);
                       }}
+                      onRename={startRename}
                       setOpenMobile={setOpenMobile}
                     />
                   ))}
@@ -270,6 +310,7 @@ export function SidebarHistory({ user }: { user: User | null }) {
                         setDeleteId(chatId);
                         setShowDeleteDialog(true);
                       }}
+                      onRename={startRename}
                       setOpenMobile={setOpenMobile}
                     />
                   ))}
@@ -279,6 +320,42 @@ export function SidebarHistory({ user }: { user: User | null }) {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      <Dialog
+        open={renameChat !== null}
+        onOpenChange={(open) => {
+          if (!open && !isRenaming) setRenameChat(null);
+        }}
+      >
+        <DialogContent>
+          <form
+            onSubmit={(event) => void handleRename(event)}
+            className="grid gap-4"
+          >
+            <DialogHeader>
+              <DialogTitle>Rename chat</DialogTitle>
+              <DialogDescription>
+                Choose a name for this conversation.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              aria-label="Chat name"
+              autoFocus
+              maxLength={100}
+              value={renameTitle}
+              onChange={(event) => setRenameTitle(event.target.value)}
+            />
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={!renameTitle.trim() || isRenaming}
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import {
   SidebarMenuAction,
   SidebarMenuButton,
@@ -26,11 +26,13 @@ const PureChatItem = ({
   chat,
   isActive,
   onDelete,
+  onRename,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
+  onRename: (chat: Chat) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
   return (
@@ -51,6 +53,10 @@ const PureChatItem = ({
           </SidebarMenuAction>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="right" align="start">
+          <DropdownMenuItem onSelect={() => onRename(chat)}>
+            <Pencil />
+            Rename
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => onDelete(chat._id)}
